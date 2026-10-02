@@ -60,6 +60,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       } else {
         document.documentElement.classList.remove('dark');
       }
+
+      // Update meta theme-color for PWA title bar and browser chrome
+      const themeColor = isDark ? '#0f172a' : '#ffffff';
+      const metaTags = document.querySelectorAll('meta[name="theme-color"]');
+      if (metaTags.length > 0) {
+        metaTags.forEach((tag) => {
+          tag.removeAttribute('media');
+          tag.setAttribute('content', themeColor);
+        });
+      } else {
+        const meta = document.createElement('meta');
+        meta.setAttribute('name', 'theme-color');
+        meta.setAttribute('content', themeColor);
+        document.head.appendChild(meta);
+      }
     };
 
     updateTheme();

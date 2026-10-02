@@ -240,7 +240,7 @@ export function ShippingLabelModal({
                 PENGIRIM (FROM):
               </p>
               <p className="font-bold text-slate-900">{COMPANY_INFO.name}</p>
-              <p className="text-xs font-semibold text-orange-600">{COMPANY_INFO.subName}</p>
+              <p className="text-xs font-semibold text-blue-600">{COMPANY_INFO.subName}</p>
               <p className="text-xs text-slate-600 mt-1">{COMPANY_INFO.address}</p>
               <p className="text-xs text-slate-800 font-mono mt-1">Telp/WA: {COMPANY_INFO.phone}</p>
             </div>
@@ -302,7 +302,7 @@ export function ShippingLabelModal({
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 active:scale-95 shadow-md shadow-orange-500/20 rounded-xl transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-500 hover:bg-blue-600 active:scale-95 shadow-md shadow-blue-500/20 rounded-xl transition-all"
           >
             <Printer className="w-4 h-4" />
             <span>Cetak Label Alamat (Stiker)</span>

@@ -45,7 +45,7 @@ export default function AuditLogsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <History className="w-6 h-6 sm:w-7 sm:h-7 text-orange-500" />
+            <History className="w-6 h-6 sm:w-7 sm:h-7 text-blue-500" />
             Audit Trail & Activity Log
           </h1>
         </div>
@@ -60,7 +60,7 @@ export default function AuditLogsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 sm:pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden font-medium"
+              className="w-full pl-8 sm:pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden font-medium"
             />
           </div>
 
@@ -68,7 +68,7 @@ export default function AuditLogsPage() {
             <select
               value={selectedActor}
               onChange={(e) => setSelectedActor(e.target.value)}
-              className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden font-medium"
+              className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden font-medium"
             >
               <option value="ALL">-- Semua Aktor / Teknisi --</option>
               {TEKNISI_LIST.map((t) => (
@@ -112,7 +112,7 @@ export default function AuditLogsPage() {
               {isLoading ? (
                 <tr>
                   <td colSpan={5} className="text-center py-12 text-slate-400 font-medium">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-orange-500" />
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-500" />
                     Memuat log aktivitas...
                   </td>
                 </tr>
@@ -145,7 +145,7 @@ export default function AuditLogsPage() {
                       {log.nomor_layanan ? (
                         <Link
                           href={`/tickets/${log.ticket_id || log.nomor_layanan}`}
-                          className="text-orange-600 dark:text-orange-400 hover:underline inline-flex items-center gap-1"
+                          className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
                         >
                           {log.nomor_layanan}
                           <ExternalLink className="w-3 h-3" />

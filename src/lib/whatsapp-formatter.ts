@@ -81,6 +81,9 @@ Keluhan : ${ticket.keluhan}
 Kelengkapan : ${kelengkapanStr}
 Estimasi Selesai : ${formatDateIndo(ticket.estimasi_selesai)}
 ━━━━━━━━━━━━━━━
+Lacak status pengerjaan unit Anda kapan saja secara online:
+https://mybctapps.vercel.app/tracking?no=${ticket.nomor_layanan}
+
 Mohon simpan pesan ini sebagai bukti serah terima perangkat.
 Catatan:
 • Pengambilan perangkat wajib menunjukkan No RMA.

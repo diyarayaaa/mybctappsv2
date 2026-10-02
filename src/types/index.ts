@@ -22,16 +22,23 @@ export type Teknisi = 'Wandi' | 'Satryo' | 'Derida' | 'Anzar' | string;
 
 export type HasilServiceGaransi = 'Diservice' | 'Diganti baru';
 
-export type UserRole = 'TEKNISI' | 'ADMIN' | 'SALES';
+export type UserRole = 'ADMIN' | 'TEKNISI' | 'SALES' | 'VIEWER';
+
+export type UserStatus = 'active' | 'pending' | 'suspended';
 
 export interface User {
   id: string;
   username: string;
+  email?: string | null;
   nama_lengkap: string;
   role: UserRole;
+  status?: UserStatus;
+  provider?: 'credentials' | 'google';
   spesialisasi?: string | null;
   avatar_color?: string | null;
+  avatar_url?: string | null;
   created_at?: string;
+  last_login?: string | null;
 }
 
 export interface Ticket {

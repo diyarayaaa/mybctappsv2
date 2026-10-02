@@ -22,7 +22,7 @@ import {
   Save,
   Wrench,
   ShieldAlert,
-  Sparkles,
+  FileText,
   Calendar,
   DollarSign,
   AlertCircle,
@@ -270,7 +270,7 @@ export function DynamicTicketForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 active:scale-95 shadow-lg shadow-orange-500/25 rounded-xl transition-all disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 shadow-lg shadow-blue-600/25 rounded-xl transition-all disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
           <span>{isSubmitting ? 'Menyimpan...' : isEditMode ? 'Simpan Perubahan' : 'Simpan Tiket'}</span>
@@ -288,7 +288,7 @@ export function DynamicTicketForm({
       {/* Section 1: Kategori & No Layanan */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <Wrench className="w-5 h-5 text-orange-500" />
+          <Wrench className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
             1. Jenis Layanan & Penomoran
           </h2>
@@ -323,7 +323,7 @@ export function DynamicTicketForm({
                 }}
                 className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border ${
                   jenisLayanan === 'GARANSI'
-                    ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-500/20'
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
                     : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
                 }`}
               >
@@ -338,7 +338,7 @@ export function DynamicTicketForm({
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Nomor Layanan (RMA) *
               </label>
-              <span className="text-[10px] text-orange-600 dark:text-orange-400 font-semibold bg-orange-50 dark:bg-orange-950/60 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded">
                 Bisa diedit
               </span>
             </div>
@@ -346,7 +346,7 @@ export function DynamicTicketForm({
               type="text"
               value={nomorLayanan}
               onChange={(e) => setNomorLayanan(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-mono font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-mono font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
             />
           </div>
 
@@ -358,7 +358,7 @@ export function DynamicTicketForm({
             <select
               value={teknisi}
               onChange={(e) => setTeknisi(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
             >
               {TEKNISI_LIST.map((t) => (
                 <option key={t} value={t}>
@@ -373,7 +373,7 @@ export function DynamicTicketForm({
       {/* Section 2: Data Pelanggan */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <ShieldAlert className="w-5 h-5 text-blue-500" />
+          <ShieldAlert className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
             2. Informasi Pelanggan
           </h2>
@@ -386,18 +386,18 @@ export function DynamicTicketForm({
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Nama Customer *
               </label>
-              <div className="flex gap-1">
+              <div className="flex gap-1.5">
                 <button
                   type="button"
                   onClick={() => setNamaCustomer('STOCK BCT')}
-                  className="text-[10px] font-bold px-2 py-0.5 bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 rounded hover:bg-purple-200"
+                  className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/70 rounded active:scale-95 transition-all"
                 >
                   + STOCK BCT
                 </button>
                 <button
                   type="button"
                   onClick={() => setNamaCustomer('TN/NY. ')}
-                  className="text-[10px] font-bold px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 rounded hover:bg-indigo-200"
+                  className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/70 rounded active:scale-95 transition-all"
                 >
                   TN/NY.
                 </button>
@@ -407,7 +407,7 @@ export function DynamicTicketForm({
               type="text"
               value={namaCustomer}
               onChange={(e) => setNamaCustomer(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
             />
           </div>
 
@@ -420,7 +420,7 @@ export function DynamicTicketForm({
               type="text"
               value={noHp}
               onChange={(e) => setNoHp(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
             />
           </div>
         </div>
@@ -429,7 +429,7 @@ export function DynamicTicketForm({
       {/* Section 3: Data Perangkat & Keluhan */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <Sparkles className="w-5 h-5 text-amber-500" />
+          <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
             3. Informasi Perangkat, Keluhan & Kelengkapan
           </h2>
@@ -444,7 +444,7 @@ export function DynamicTicketForm({
             <select
               value={jenisBarang}
               onChange={(e) => handleJenisBarangChange(e.target.value as JenisBarang)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
             >
               {JENIS_BARANG_LIST.map((jb) => (
                 <option key={jb} value={jb}>
@@ -463,7 +463,7 @@ export function DynamicTicketForm({
               type="text"
               value={namaBarang}
               onChange={(e) => setNamaBarang(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
             />
           </div>
 
@@ -476,7 +476,7 @@ export function DynamicTicketForm({
               type="text"
               value={serialNumber}
               onChange={(e) => setSerialNumber(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-mono font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-mono font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
             />
           </div>
         </div>
@@ -532,11 +532,11 @@ export function DynamicTicketForm({
                   onClick={() => toggleKelengkapan(opt)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
                     isSelected
-                      ? 'bg-slate-900 dark:bg-orange-500 text-white border-slate-900 dark:border-orange-500 shadow-xs'
+                      ? 'bg-slate-900 dark:bg-blue-500 text-white border-slate-900 dark:border-blue-500 shadow-xs'
                       : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                   }`}
                 >
-                  {isSelected && <Check className="w-3.5 h-3.5 text-orange-400 dark:text-white" />}
+                  {isSelected && <Check className="w-3.5 h-3.5 text-blue-400 dark:text-white" />}
                   <span>{opt}</span>
                 </button>
               );
@@ -575,7 +575,7 @@ export function DynamicTicketForm({
             type="text"
             value={catatan}
             onChange={(e) => setCatatan(e.target.value)}
-            className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+            className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
           />
         </div>
       </div>
@@ -583,7 +583,7 @@ export function DynamicTicketForm({
       {/* Section 4: Status Pengerjaan & Estimasi */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <Calendar className="w-5 h-5 text-emerald-500" />
+          <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
             4. Status Pengerjaan & Estimasi Waktu
           </h2>
@@ -598,7 +598,7 @@ export function DynamicTicketForm({
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as StatusTiket)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
             >
               {jenisLayanan === 'GARANSI' && (
                 <option value="">-- Belum Ada Status (Kosong) --</option>
@@ -620,7 +620,7 @@ export function DynamicTicketForm({
               type="date"
               value={estimasiSelesai}
               onChange={(e) => setEstimasiSelesai(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
             />
           </div>
         </div>
@@ -628,15 +628,15 @@ export function DynamicTicketForm({
 
       {/* Section 5: Matrix Kondisional Garansi & Alih Servis */}
       {isGaransiOrAlih && (
-        <div className="bg-amber-50/50 dark:bg-amber-950/20 p-4 sm:p-6 rounded-2xl border-2 border-amber-300 dark:border-amber-800 shadow-sm space-y-4 sm:space-y-5 animate-in fade-in">
-          <div className="flex items-center justify-between pb-3 border-b border-amber-200 dark:border-amber-800">
+        <div className="bg-blue-50/50 dark:bg-blue-950/20 p-4 sm:p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-800 shadow-sm space-y-4 sm:space-y-5 animate-in fade-in">
+          <div className="flex items-center justify-between pb-3 border-b border-blue-200 dark:border-blue-800">
             <div className="flex items-center gap-2">
-              <Truck className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              <h2 className="text-xs sm:text-sm font-bold text-amber-950 dark:text-amber-200 uppercase tracking-wider">
+              <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <h2 className="text-xs sm:text-sm font-bold text-blue-950 dark:text-blue-200 uppercase tracking-wider">
                 5. Alur Logistik Vendor & Klaim Garansi
               </h2>
             </div>
-            <span className="text-[10px] sm:text-xs font-bold bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 px-2.5 py-0.5 rounded-full">
+            <span className="text-[10px] sm:text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-200 px-2.5 py-0.5 rounded-full">
               Vendor Active
             </span>
           </div>
@@ -644,13 +644,13 @@ export function DynamicTicketForm({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
             {/* Vendor */}
             <div>
-              <label className="block text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                 Distributor / Vendor *
               </label>
               <select
                 value={distributorVendor}
                 onChange={(e) => setDistributorVendor(e.target.value)}
-                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-amber-300 dark:border-amber-700 focus:border-orange-500 focus:outline-hidden"
+                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
               >
                 <option value="">-- Pilih Vendor --</option>
                 {vendors.map((v) => (
@@ -663,26 +663,26 @@ export function DynamicTicketForm({
 
             {/* No Surat Jalan */}
             <div>
-              <label className="block text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                 No. Surat Jalan
               </label>
               <input
                 type="text"
                 value={noSuratJalan}
                 onChange={(e) => setNoSuratJalan(e.target.value)}
-                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-mono font-semibold text-slate-900 dark:text-white rounded-xl border border-amber-300 dark:border-amber-700 focus:border-orange-500 focus:outline-hidden"
+                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-mono font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
               />
             </div>
 
             {/* Hasil Service */}
             <div>
-              <label className="block text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                 Hasil Service / Garansi
               </label>
               <select
                 value={hasilServiceGaransi}
                 onChange={(e) => setHasilServiceGaransi(e.target.value as HasilServiceGaransi)}
-                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-amber-300 dark:border-amber-700 focus:border-orange-500 focus:outline-hidden"
+                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
               >
                 <option value="">-- Belum Ada Hasil --</option>
                 <option value="Diservice">Diservice (Unit Sama)</option>
@@ -693,38 +693,38 @@ export function DynamicTicketForm({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
             <div>
-              <label className="block text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                 Tgl Kirim ke Vendor
               </label>
               <input
                 type="date"
                 value={tglKirimVendor}
                 onChange={(e) => setTglKirimVendor(e.target.value)}
-                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white rounded-xl border border-amber-300 dark:border-amber-700 focus:border-orange-500 focus:outline-hidden"
+                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                 Tgl Datang dari Vendor
               </label>
               <input
                 type="date"
                 value={tglDatangVendor}
                 onChange={(e) => setTglDatangVendor(e.target.value)}
-                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white rounded-xl border border-amber-300 dark:border-amber-700 focus:border-orange-500 focus:outline-hidden"
+                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
               />
             </div>
           </div>
 
           {/* Conditional Mandatory SN Baru */}
           {isGantiBaru && (
-            <div className="p-4 bg-orange-100 dark:bg-orange-950/60 rounded-xl border-2 border-orange-400 dark:border-orange-700 animate-in slide-in-from-top-2">
+            <div className="p-4 bg-blue-100 dark:bg-blue-950/60 rounded-xl border-2 border-blue-400 dark:border-blue-700 animate-in slide-in-from-top-2">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-extrabold text-orange-950 dark:text-orange-200 uppercase tracking-wider">
+                <label className="text-xs font-extrabold text-blue-950 dark:text-blue-200 uppercase tracking-wider">
                   Serial Number Baru (SN Baru) * Wajib Diisi
                 </label>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-500 text-white rounded">
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-500 text-white rounded">
                   Mandatory
                 </span>
               </div>
@@ -732,7 +732,7 @@ export function DynamicTicketForm({
                 type="text"
                 value={snBaru}
                 onChange={(e) => setSnBaru(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 text-sm font-mono font-bold text-slate-900 dark:text-white rounded-xl border border-orange-400 dark:border-orange-600 focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 text-sm font-mono font-bold text-slate-900 dark:text-white rounded-xl border border-blue-400 dark:border-blue-600 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               />
             </div>
           )}
@@ -742,7 +742,7 @@ export function DynamicTicketForm({
       {/* Section 6: Keuangan & Pelunasan */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
             6. Rincian Keuangan
           </h2>
@@ -762,7 +762,7 @@ export function DynamicTicketForm({
                 step="1000"
                 value={estimasiBiaya}
                 onChange={(e) => setEstimasiBiaya(Number(e.target.value))}
-                className="w-full pl-10 pr-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+                className="w-full pl-10 pr-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
               />
             </div>
           </div>
@@ -780,7 +780,7 @@ export function DynamicTicketForm({
                 step="1000"
                 value={dp}
                 onChange={(e) => setDp(Number(e.target.value))}
-                className="w-full pl-10 pr-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-emerald-700 dark:text-emerald-400 rounded-xl border border-slate-300 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden"
+                className="w-full pl-10 pr-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-emerald-700 dark:text-emerald-400 rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
               />
             </div>
           </div>
@@ -790,9 +790,9 @@ export function DynamicTicketForm({
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
               Sisa Pembayaran (Auto)
             </label>
-            <div className="px-3.5 py-2 sm:py-2.5 bg-orange-50/80 dark:bg-orange-950/40 rounded-xl border border-orange-200 dark:border-orange-800 flex items-center justify-between">
-              <span className="text-xs font-bold text-orange-900 dark:text-orange-300">Sisa:</span>
-              <span className="text-sm sm:text-base font-extrabold text-orange-600 dark:text-orange-400">
+            <div className="px-3.5 py-2 sm:py-2.5 bg-blue-50/80 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 flex items-center justify-between">
+              <span className="text-xs font-bold text-blue-900 dark:text-blue-300">Sisa:</span>
+              <span className="text-sm sm:text-base font-extrabold text-blue-600 dark:text-blue-400">
                 Rp {sisaBiaya.toLocaleString('id-ID')}
               </span>
             </div>
@@ -844,7 +844,7 @@ export function DynamicTicketForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex items-center gap-2 px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 active:scale-95 shadow-lg shadow-orange-500/25 rounded-xl transition-all disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 shadow-lg shadow-blue-600/25 rounded-xl transition-all disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
           <span>{isSubmitting ? 'Menyimpan...' : isEditMode ? 'Simpan Perubahan' : 'Simpan Tiket'}</span>

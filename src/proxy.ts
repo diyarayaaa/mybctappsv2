@@ -8,6 +8,8 @@ export function proxy(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/tracking') ||
+    pathname.startsWith('/tracking') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/logo.png') ||
     pathname.startsWith('/manifest') ||

@@ -58,6 +58,7 @@ export default function TicketDetailPage({
   const [newHasilGaransi, setNewHasilGaransi] = useState<'Diservice' | 'Diganti baru' | ''>('');
   const [newSnBaru, setNewSnBaru] = useState('');
   const [newBiayaAkhir, setNewBiayaAkhir] = useState<number>(0);
+  const [newTglDiambil, setNewTglDiambil] = useState<string>('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const fetchTicket = useCallback(async () => {
@@ -73,6 +74,8 @@ export default function TicketDetailPage({
         setNewHasilGaransi(data.ticket.hasil_service_garansi || '');
         setNewSnBaru(data.ticket.sn_baru || '');
         setNewBiayaAkhir(data.ticket.biaya_akhir || data.ticket.estimasi_biaya || 0);
+        const todayDate = new Date().toLocaleDateString('en-CA');
+        setNewTglDiambil(data.ticket.tgl_diambil_customer ? data.ticket.tgl_diambil_customer.slice(0, 10) : todayDate);
       }
     } catch (err) {
       console.error('Failed to load ticket:', err);
@@ -100,7 +103,11 @@ export default function TicketDetailPage({
 
       if (newStatus === 'SELESAI & DIAMBIL' || newStatus === 'GAGAL SERVICE/GARANSI') {
         payload.biaya_akhir = Number(newBiayaAkhir) || Number(ticket.estimasi_biaya);
-        payload.tgl_diambil_customer = new Date().toISOString().replace('T', ' ').slice(0, 19);
+        if (newStatus === 'SELESAI & DIAMBIL') {
+          payload.tgl_diambil_customer = newTglDiambil
+            ? (newTglDiambil.includes(' ') ? newTglDiambil : `${newTglDiambil} 00:00:00`)
+            : new Date().toISOString().replace('T', ' ').slice(0, 19);
+        }
       }
 
       const res = await fetch(`/api/tickets/${ticket.id}`, {
@@ -140,7 +147,7 @@ export default function TicketDetailPage({
   if (isLoading) {
     return (
       <div className="py-20 text-center text-slate-500 dark:text-slate-400 font-medium">
-        <Clock className="w-8 h-8 animate-spin mx-auto mb-2 text-orange-500" />
+        <Clock className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-500" />
         Memuat detail tiket servis...
       </div>
     );
@@ -154,7 +161,7 @@ export default function TicketDetailPage({
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Tiket dengan ID ini tidak ada atau telah dihapus.</p>
         <Link
           href="/tickets"
-          className="inline-flex items-center gap-1.5 px-4 py-2 mt-4 bg-slate-900 dark:bg-orange-500 text-white rounded-xl text-xs font-bold"
+          className="inline-flex items-center gap-1.5 px-4 py-2 mt-4 bg-slate-900 dark:bg-blue-500 text-white rounded-xl text-xs font-bold"
         >
           <ArrowLeft className="w-4 h-4" />
           Kembali ke Antrean
@@ -249,7 +256,7 @@ export default function TicketDetailPage({
           <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 transition-colors">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-orange-500" />
+                <Wrench className="w-5 h-5 text-blue-500" />
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Informasi Perangkat & Kerusakan
                 </h3>
@@ -353,7 +360,7 @@ export default function TicketDetailPage({
                     {ticket.no_surat_jalan ? (
                       <Link
                         href={`/surat-jalan/print/${ticket.no_surat_jalan}`}
-                        className="text-orange-600 dark:text-orange-400 hover:underline inline-flex items-center gap-1"
+                        className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
                       >
                         {ticket.no_surat_jalan}
                         <ExternalLink className="w-3 h-3" />
@@ -491,7 +498,7 @@ export default function TicketDetailPage({
 
               <div className="flex justify-between pt-2 border-t border-slate-200 dark:border-slate-800 font-extrabold text-sm text-slate-900 dark:text-white">
                 <span>Sisa Pembayaran:</span>
-                <span className="text-orange-600 dark:text-orange-400">
+                <span className="text-blue-600 dark:text-blue-400">
                   Rp {Number(ticket.sisa || 0).toLocaleString('id-ID')}
                 </span>
               </div>
@@ -545,7 +552,7 @@ export default function TicketDetailPage({
           <button
             type="button"
             onClick={() => setIsReceiptModalOpen(true)}
-            className="w-full inline-flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-md shadow-orange-500/20 transition-all"
+            className="w-full inline-flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-500/20 transition-all"
           >
             <Printer className="w-4 h-4" />
             <span>Cetak Tanda Terima Servis (Struk)</span>
@@ -568,7 +575,13 @@ export default function TicketDetailPage({
             </label>
             <select
               value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value as StatusTiket)}
+              onChange={(e) => {
+                const val = e.target.value as StatusTiket;
+                setNewStatus(val);
+                if (val === 'SELESAI & DIAMBIL' && !newTglDiambil) {
+                  setNewTglDiambil(new Date().toLocaleDateString('en-CA'));
+                }
+              }}
               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden"
             >
               {ticket.jenis_layanan === 'GARANSI' && (
@@ -633,6 +646,29 @@ export default function TicketDetailPage({
             </div>
           )}
 
+                    {newStatus === 'SELESAI & DIAMBIL' && (
+            <div className="p-3 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 space-y-1.5 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-blue-950 dark:text-blue-200 uppercase tracking-wider">
+                  Tanggal Diambil (Tgl Diambil) *
+                </label>
+                <span className="text-[10px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/60 px-2 py-0.5 rounded-md">
+                  Wajib Diisi
+                </span>
+              </div>
+              <input
+                type="date"
+                required
+                value={newTglDiambil}
+                onChange={(e) => setNewTglDiambil(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-lg border border-blue-300 dark:border-blue-700 focus:border-blue-500 focus:outline-hidden shadow-2xs"
+              />
+              <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                Tanggal saat unit barang diserahkan ke pelanggan / customer.
+              </p>
+            </div>
+          )}
+
           {(newStatus === 'SELESAI & DIAMBIL' || newStatus === 'GAGAL SERVICE/GARANSI') && (
             <div className="p-3 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-300 dark:border-slate-700">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
@@ -659,7 +695,7 @@ export default function TicketDetailPage({
             <button
               type="submit"
               disabled={isUpdatingStatus}
-              className="px-5 py-2 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs"
+              className="px-5 py-2 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs"
             >
               {isUpdatingStatus ? 'Menyimpan...' : 'Simpan Status Baru'}
             </button>

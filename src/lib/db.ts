@@ -6,11 +6,25 @@ function getDbPath(): string {
   // Vercel filesystem is read-only except /tmp — use /tmp on Vercel
   const isVercel = !!process.env.VERCEL;
   if (isVercel) {
-    // /tmp is writable on Vercel lambda
+    const tmpDbPath = path.join('/tmp', 'bct.sqlite');
     try {
-      fs.mkdirSync('/tmp/data', { recursive: true });
-    } catch {}
-    return path.join('/tmp', 'bct.sqlite');
+      if (!fs.existsSync(tmpDbPath)) {
+        const candidatePaths = [
+          path.join(process.cwd(), 'data', 'bct.sqlite'),
+          path.join(__dirname, '..', '..', 'data', 'bct.sqlite'),
+          path.join(__dirname, 'data', 'bct.sqlite')
+        ];
+        for (const candidate of candidatePaths) {
+          if (fs.existsSync(candidate)) {
+            fs.copyFileSync(candidate, tmpDbPath);
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[db] Could not copy initial sqlite DB to /tmp:', e);
+    }
+    return tmpDbPath;
   }
   const dbDir = path.join(process.cwd(), 'data');
   try {
@@ -78,7 +92,43 @@ function initDatabase(db: DatabaseSync) {
         role TEXT NOT NULL,
         spesialisasi TEXT,
         avatar_color TEXT,
+        email TEXT,
+        status TEXT DEFAULT 'active',
+        provider TEXT DEFAULT 'credentials',
+        avatar_url TEXT,
+        last_login TEXT,
         created_at TEXT DEFAULT (datetime('now', 'localtime'))
+      );
+    `);
+
+    // Migration for existing users table
+    try { db.exec("ALTER TABLE users ADD COLUMN email TEXT;"); } catch {}
+    try { db.exec("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active';"); } catch {}
+    try { db.exec("ALTER TABLE users ADD COLUMN provider TEXT DEFAULT 'credentials';"); } catch {}
+    try { db.exec("ALTER TABLE users ADD COLUMN avatar_url TEXT;"); } catch {}
+    try { db.exec("ALTER TABLE users ADD COLUMN last_login TEXT;"); } catch {}
+    try { db.exec("UPDATE users SET status = 'active' WHERE status IS NULL;"); } catch {}
+    try { db.exec("UPDATE users SET provider = 'credentials' WHERE provider IS NULL;"); } catch {}
+
+    // Table auth_otps (for Gmail OTP authentication)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS auth_otps (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        code TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        used INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now', 'localtime'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_otps_email ON auth_otps (email);
+    `);
+
+    // Table app_settings (for SMTP and system configuration)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT DEFAULT (datetime('now', 'localtime'))
       );
     `);
 

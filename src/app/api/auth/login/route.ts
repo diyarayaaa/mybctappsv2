@@ -16,16 +16,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cleanUsername = String(username).trim().toLowerCase();
+    const cleanLogin = String(username).trim().toLowerCase();
 
-    // Query user
-    const stmt = db.prepare('SELECT id, username, password_hash, nama_lengkap, role, spesialisasi, avatar_color, created_at FROM users WHERE LOWER(username) = ?');
-    const rawUser = stmt.get(cleanUsername) as (User & { password_hash: string }) | undefined;
+    // Query user by username or email
+    const stmt = db.prepare(`
+      SELECT id, username, email, password_hash, nama_lengkap, role, status, provider, spesialisasi, avatar_color, avatar_url, created_at, last_login 
+      FROM users 
+      WHERE LOWER(username) = ? OR LOWER(COALESCE(email, '')) = ?
+    `);
+    const rawUser = stmt.get(cleanLogin, cleanLogin) as (User & { password_hash: string }) | undefined;
 
     if (!rawUser) {
       return NextResponse.json(
-        { error: 'Pengguna tidak ditemukan' },
+        { error: 'Pengguna atau akun tidak ditemukan' },
         { status: 401 }
+      );
+    }
+
+    // Check account status
+    if (rawUser.status === 'suspended') {
+      return NextResponse.json(
+        { error: 'Akun Anda dinonaktifkan oleh Administrator. Hubungi Admin BCT.' },
+        { status: 403 }
+      );
+    }
+
+    if (rawUser.status === 'pending') {
+      return NextResponse.json(
+        { error: 'Akun Anda sedang menunggu persetujuan (approval) dari Administrator.' },
+        { status: 403 }
       );
     }
 
@@ -36,6 +55,11 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Update last_login
+    try {
+      db.prepare("UPDATE users SET last_login = datetime('now', 'localtime') WHERE id = ?").run(rawUser.id);
+    } catch {}
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_hash, ...safeUser } = rawUser;
@@ -53,7 +77,7 @@ export async function POST(request: NextRequest) {
       path: '/',
       httpOnly: false,
       sameSite: 'lax',
-      ...(rememberMe ? { maxAge: 60 * 60 * 24 * 7 } : {})
+      maxAge: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 * 7
     };
 
     response.cookies.set(cookieOptions);

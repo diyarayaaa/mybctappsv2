@@ -204,6 +204,7 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
         <div className="grid grid-cols-12 border border-black">
           <div className="col-span-9 p-1.5 text-[9px] sm:text-[10px] space-y-0.5 leading-snug">
             <p className="font-bold uppercase text-[9px] sm:text-[10px]">CATATAN :</p>
+            <p>• Pantau status pengerjaan secara online di website/portal tracking menggunakan No. Tanda Terima di atas.</p>
             <p>• Tanda terima wajib dibawa saat pengambilan, jika tidak wajib verifikasi melalui WhatsApp.</p>
             <p>• Kami tidak bertanggung jawab atas kehilangan data yang disebabkan oleh kejadian tak terduga.</p>
             <p>• Barang yang tidak diambil dalam 30 hari setelah pemberitahuan berada di luar tanggung jawab kami.</p>
@@ -296,7 +297,7 @@ function ProfessionalReceipt({ ticket }: { ticket: Ticket }) {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-base font-black tracking-tight text-slate-900">BEST COMPUTEL</span>
-              <span className="px-2 py-0.5 text-[9px] font-extrabold bg-orange-500 text-white rounded-md">
+              <span className="px-2 py-0.5 text-[9px] font-extrabold bg-blue-500 text-white rounded-md">
                 SERVICE & RMA
               </span>
             </div>
@@ -346,7 +347,7 @@ function ProfessionalReceipt({ ticket }: { ticket: Ticket }) {
       <div className="p-3.5 bg-slate-900 text-white rounded-xl flex items-center justify-between">
         <div>
           <p className="text-[10px] text-slate-400 uppercase font-bold">Teknisi Penanggung Jawab</p>
-          <p className="text-sm font-bold text-orange-400">{ticket.teknisi}</p>
+          <p className="text-sm font-bold text-blue-400">{ticket.teknisi}</p>
         </div>
         <div className="flex items-center gap-6 text-right">
           <div>
@@ -369,7 +370,8 @@ function ProfessionalReceipt({ ticket }: { ticket: Ticket }) {
         <div className="text-[10px] text-slate-500 space-y-1">
           <p className="font-bold text-slate-700">Syarat & Ketentuan Pengambilan:</p>
           <p>1. Tanda terima ini adalah bukti sah kepemilikan dan wajib dibawa saat pengambilan unit.</p>
-          <p>2. Konfirmasi otomatis akan dikirimkan via WhatsApp setelah servis selesai.</p>
+          <p>2. Lacak progres pengerjaan unit kapan saja di portal tracking online dengan No. Tanda Terima di atas.</p>
+          <p>3. Konfirmasi otomatis akan dikirimkan via WhatsApp setelah servis selesai.</p>
         </div>
         <div className="grid grid-cols-2 text-center text-[10px] pt-4">
           <div>
@@ -416,7 +418,7 @@ export function CustomerReceiptModal({
               onClick={() => setReceiptFormat('standard')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 receiptFormat === 'standard'
-                  ? 'bg-orange-500 text-white shadow-xs'
+                  ? 'bg-blue-500 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -429,7 +431,7 @@ export function CustomerReceiptModal({
               onClick={() => setReceiptFormat('professional')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 receiptFormat === 'professional'
-                  ? 'bg-orange-500 text-white shadow-xs'
+                  ? 'bg-blue-500 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -466,7 +468,7 @@ export function CustomerReceiptModal({
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 active:scale-95 shadow-md shadow-orange-500/20 rounded-xl transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-500 hover:bg-blue-600 active:scale-95 shadow-md shadow-blue-500/20 rounded-xl transition-all"
           >
             <Printer className="w-4 h-4" />
             <span>Cetak Tanda Terima ({receiptFormat === 'standard' ? 'Standar' : 'Profesional'})</span>

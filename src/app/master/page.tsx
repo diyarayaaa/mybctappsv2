@@ -284,7 +284,7 @@ function MasterDataContent() {
             onClick={() => handleTabChange('vendor')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
               activeTab === 'vendor'
-                ? 'bg-cyan-500 text-white shadow-sm'
+                ? 'bg-blue-500 text-white shadow-sm'
                 : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
             }`}
           >
@@ -297,7 +297,7 @@ function MasterDataContent() {
             onClick={() => handleTabChange('customer')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
               activeTab === 'customer'
-                ? 'bg-cyan-500 text-white shadow-sm'
+                ? 'bg-blue-500 text-white shadow-sm'
                 : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
             }`}
           >
@@ -310,7 +310,7 @@ function MasterDataContent() {
             onClick={() => handleTabChange('keluhan')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
               activeTab === 'keluhan'
-                ? 'bg-cyan-500 text-white shadow-sm'
+                ? 'bg-blue-500 text-white shadow-sm'
                 : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
             }`}
           >
@@ -326,7 +326,7 @@ function MasterDataContent() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 text-xs rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:border-cyan-500"
+            className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 text-xs rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:border-blue-500"
           />
         </div>
       </div>
@@ -336,7 +336,7 @@ function MasterDataContent() {
         <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-cyan-600" />
+              <Building2 className="w-5 h-5 text-blue-600" />
               <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Distributor & Vendor Garansi
               </h2>
@@ -345,7 +345,7 @@ function MasterDataContent() {
             <button
               type="button"
               onClick={() => setIsVendorModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500 hover:bg-cyan-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>Tambah Vendor</span>
@@ -378,7 +378,7 @@ function MasterDataContent() {
                       type="button"
                       onClick={() => handleOpenEditVendor(v)}
                       title="Edit Vendor"
-                      className="p-1 rounded-md text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-950/60 transition-colors"
+                      className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 transition-colors"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -411,7 +411,7 @@ function MasterDataContent() {
         <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-cyan-600" />
+              <Users className="w-5 h-5 text-blue-600" />
               <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Daftar Pelanggan / Master Customer
               </h2>
@@ -427,7 +427,7 @@ function MasterDataContent() {
               >
                 <div className="flex items-center justify-between">
                   <h3 className="font-extrabold text-slate-900 dark:text-white text-sm">{c.nama}</h3>
-                  <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-300">
+                  <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300">
                     {c.totalTiket} Tiket
                   </span>
                 </div>
@@ -450,7 +450,7 @@ function MasterDataContent() {
         <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-500" />
+              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Preset Form Option / Kamus Keluhan
               </h2>
@@ -472,7 +472,7 @@ function MasterDataContent() {
                 key={k.id}
                 className="p-3 bg-slate-50 dark:bg-slate-800/70 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2"
               >
-                <span className="w-2 h-2 rounded-full bg-cyan-500 shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
                 <span className="truncate">{k.teks_keluhan}</span>
               </div>
             ))}
@@ -550,7 +550,7 @@ function MasterDataContent() {
             <button
               type="submit"
               disabled={isSubmittingVendor || !namaVendor.trim()}
-              className="px-4 py-2 text-xs font-bold text-white bg-cyan-500 hover:bg-cyan-600 rounded-xl transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-xs font-bold text-white bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors disabled:opacity-50"
             >
               {isSubmittingVendor ? 'Menyimpan...' : 'Simpan Vendor'}
             </button>
@@ -589,7 +589,7 @@ function MasterDataContent() {
             <button
               type="submit"
               disabled={isSubmittingKeluhan || !teksKeluhan.trim()}
-              className="px-4 py-2 text-xs font-bold text-white bg-cyan-500 hover:bg-cyan-600 rounded-xl transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-xs font-bold text-white bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors disabled:opacity-50"
             >
               {isSubmittingKeluhan ? 'Menyimpan...' : 'Simpan Preset'}
             </button>
@@ -622,7 +622,7 @@ function MasterDataContent() {
               required
               value={editNamaVendor}
               onChange={(e) => setEditNamaVendor(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden focus:border-cyan-500"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden focus:border-blue-500"
             />
           </div>
 
@@ -633,7 +633,7 @@ function MasterDataContent() {
             <select
               value={editWilayah}
               onChange={(e) => setEditWilayah(e.target.value as 'BDG' | 'JKT' | 'OTHER')}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden focus:border-cyan-500"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden focus:border-blue-500"
             >
               <option value="BDG">Bandung (BDG)</option>
               <option value="JKT">Jakarta (JKT)</option>
@@ -649,7 +649,7 @@ function MasterDataContent() {
               rows={3}
               value={editAlamatLengkap}
               onChange={(e) => setEditAlamatLengkap(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden focus:border-cyan-500"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden focus:border-blue-500"
             />
           </div>
 
@@ -661,7 +661,7 @@ function MasterDataContent() {
               type="text"
               value={editKontakWa}
               onChange={(e) => setEditKontakWa(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden focus:border-cyan-500"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden focus:border-blue-500"
             />
           </div>
 
@@ -677,7 +677,7 @@ function MasterDataContent() {
             <button
               type="submit"
               disabled={isSubmittingEditVendor || !editNamaVendor.trim()}
-              className="px-4 py-2 text-xs font-bold text-white bg-cyan-500 hover:bg-cyan-600 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-xs"
+              className="px-4 py-2 text-xs font-bold text-white bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-xs"
             >
               <Pencil className="w-3.5 h-3.5" />
               <span>{isSubmittingEditVendor ? 'Menyimpan...' : 'Simpan Perubahan'}</span>

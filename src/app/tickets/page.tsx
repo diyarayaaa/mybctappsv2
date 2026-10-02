@@ -17,7 +17,9 @@ import {
   AlertCircle,
   FileSpreadsheet,
   ArrowDownWideNarrow,
-  ArrowUpNarrowWide
+  ArrowUpNarrowWide,
+  Table,
+  Columns
 } from 'lucide-react';
 import { StatusBadge, ServiceTypeBadge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
@@ -41,6 +43,25 @@ function TicketsContent() {
   const [selectedJenis, setSelectedJenis] = useState('ALL');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [isLoading, setIsLoading] = useState(true);
+  const [tableViewMode, setTableViewMode] = useState<'full' | 'compact'>('full');
+
+  const formatRupiah = (val?: number | null) => {
+    if (val === undefined || val === null || val === 0) return '-';
+    return 'Rp ' + Number(val).toLocaleString('id-ID');
+  };
+
+  const formatKelengkapan = (val?: string[] | string | null) => {
+    if (!val) return '-';
+    if (Array.isArray(val)) {
+      return val.length > 0 ? val.join(', ') : '-';
+    }
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed.length > 0 ? parsed.join(', ') : '-';
+    } catch {}
+    return String(val);
+  };
+
 
   // Selection state for Bulk Actions
   const [selectedTicketIds, setSelectedTicketIds] = useState<string[]>([]);
@@ -163,7 +184,7 @@ function TicketsContent() {
 
           <Link
             href="/tickets/new"
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 active:scale-95 shadow-md shadow-orange-500/20 rounded-xl transition-all self-start sm:self-auto"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold text-white bg-blue-500 hover:bg-blue-600 active:scale-95 shadow-md shadow-blue-500/20 rounded-xl transition-all self-start sm:self-auto"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Buat Tiket Baru</span>
@@ -175,7 +196,7 @@ function TicketsContent() {
       {selectedTicketIds.length > 0 && (
         <div className="p-3 sm:p-4 bg-slate-900 dark:bg-slate-800 text-white rounded-2xl shadow-xl flex flex-wrap items-center justify-between gap-3 border border-slate-700 animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="flex items-center gap-2.5">
-            <span className="w-6 h-6 rounded-full bg-orange-500 text-white font-black text-xs flex items-center justify-center">
+            <span className="w-6 h-6 rounded-full bg-blue-500 text-white font-black text-xs flex items-center justify-center">
               {selectedTicketIds.length}
             </span>
             <span className="text-xs sm:text-sm font-bold">
@@ -214,7 +235,7 @@ function TicketsContent() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 sm:pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden font-medium"
+              className="w-full pl-8 sm:pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden font-medium"
             />
           </div>
 
@@ -223,7 +244,7 @@ function TicketsContent() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden font-medium"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden font-medium"
             >
               <option value="ALL">-- Semua Status --</option>
               {STATUS_LIST.map((s) => (
@@ -239,7 +260,7 @@ function TicketsContent() {
             <select
               value={selectedTeknisi}
               onChange={(e) => setSelectedTeknisi(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden font-medium"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden font-medium"
             >
               <option value="ALL">-- Semua Teknisi --</option>
               {TEKNISI_LIST.map((t) => (
@@ -255,7 +276,7 @@ function TicketsContent() {
             <select
               value={selectedJenis}
               onChange={(e) => setSelectedJenis(e.target.value)}
-              className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 focus:outline-hidden font-medium"
+              className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden font-medium"
             >
               <option value="ALL">-- Semua Jenis --</option>
               <option value="SERVICE">Service Reguler</option>
@@ -270,12 +291,12 @@ function TicketsContent() {
             >
               {sortOrder === 'desc' ? (
                 <>
-                  <ArrowDownWideNarrow className="w-3.5 h-3.5 text-orange-500" />
+                  <ArrowDownWideNarrow className="w-3.5 h-3.5 text-blue-500" />
                   <span>Terbaru ⬇</span>
                 </>
               ) : (
                 <>
-                  <ArrowUpNarrowWide className="w-3.5 h-3.5 text-orange-500" />
+                  <ArrowUpNarrowWide className="w-3.5 h-3.5 text-blue-500" />
                   <span>Terlama ⬆</span>
                 </>
               )}
@@ -294,81 +315,163 @@ function TicketsContent() {
 
       {/* Tickets Table */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
-        <div className="px-4 sm:px-5 py-3 bg-slate-50/50 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        <div className="px-4 sm:px-5 py-3 bg-slate-50/50 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleToggleSelectAll}
-              className="p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+              className="p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
               title={isAllSelected ? 'Batalkan Semua Pilihan' : 'Pilih Semua Tiket'}
             >
               {isAllSelected ? (
-                <CheckSquare className="w-4 h-4 text-orange-500" />
+                <CheckSquare className="w-4 h-4 text-blue-500" />
               ) : isPartiallySelected ? (
-                <div className="w-4 h-4 rounded border-2 border-orange-500 bg-orange-500/20 flex items-center justify-center">
-                  <div className="w-2 h-0.5 bg-orange-500" />
+                <div className="w-4 h-4 rounded border-2 border-blue-500 bg-blue-500/20 flex items-center justify-center">
+                  <div className="w-2 h-0.5 bg-blue-500" />
                 </div>
               ) : (
                 <Square className="w-4 h-4 text-slate-400" />
               )}
             </button>
-            <span>Menampilkan {tickets.length} Tiket</span>
+            <span>Menampilkan {sortedTickets.length} Tiket</span>
+            {selectedTicketIds.length > 0 && (
+              <span className="text-blue-600 dark:text-blue-400 font-bold ml-2">
+                ({selectedTicketIds.length} terpilih)
+              </span>
+            )}
           </div>
 
-          {selectedTicketIds.length > 0 && (
-            <span className="text-orange-600 dark:text-orange-400 font-bold">
-              {selectedTicketIds.length} terpilih
-            </span>
-          )}
+          {/* Toggle Mode Tampilan: 25 Kolom DB vs Ringkas */}
+          <div className="flex items-center bg-slate-200/80 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-300 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setTableViewMode('full')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                tableViewMode === 'full'
+                  ? 'bg-blue-500 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Tampilkan 25 kolom lengkap sesuai susunan database"
+            >
+              <Table className="w-3.5 h-3.5" />
+              <span>25 Kolom DB</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTableViewMode('compact')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                tableViewMode === 'compact'
+                  ? 'bg-blue-500 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Tampilkan 8 kolom ringkas"
+            >
+              <Columns className="w-3.5 h-3.5" />
+              <span>Ringkas</span>
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+          <table className="w-full text-left text-xs sm:text-sm border-separate border-spacing-0">
             <thead className="bg-slate-50/80 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
-              <tr>
-                <th className="p-3 sm:p-3.5 w-8 text-center">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={handleToggleSelectAll}
-                    className="rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                    aria-label="Pilih Semua Tiket"
-                  />
-                </th>
-                <th
-                  onClick={() => setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
-                  className="px-3 sm:px-4 py-3 sm:py-3.5 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition-colors"
-                  title="Klik untuk mengurutkan No RMA"
-                >
-                  <div className="inline-flex items-center gap-1.5">
-                    <span>No RMA</span>
-                    {sortOrder === 'desc' ? (
-                      <ArrowDownWideNarrow className="w-3.5 h-3.5 text-orange-500" />
-                    ) : (
-                      <ArrowUpNarrowWide className="w-3.5 h-3.5 text-orange-500" />
-                    )}
-                  </div>
-                </th>
-                <th className="px-3 sm:px-4 py-3 sm:py-3.5">Tanggal</th>
-                <th className="px-3 sm:px-4 py-3 sm:py-3.5">Customer</th>
-                <th className="px-3 sm:px-4 py-3 sm:py-3.5">Perangkat & SN</th>
-                <th className="px-3 sm:px-4 py-3 sm:py-3.5">Keluhan</th>
-                <th className="px-3 sm:px-4 py-3 sm:py-3.5">Teknisi</th>
-                <th className="px-3 sm:px-4 py-3 sm:py-3.5">Status</th>
-                <th className="px-3 sm:px-4 py-3 sm:py-3.5 text-right">Aksi</th>
-              </tr>
+              {tableViewMode === 'full' ? (
+                <tr>
+                  <th className="w-12 min-w-[48px] max-w-[48px] px-2 py-3 sm:py-3.5 text-center sticky left-0 z-20 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={handleToggleSelectAll}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      aria-label="Pilih Semua Tiket"
+                    />
+                  </th>
+                  <th
+                    onClick={() => setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
+                    className="px-3 sm:px-4 py-3 sm:py-3.5 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition-colors sticky left-12 z-20 bg-slate-50 dark:bg-slate-800 border-r border-b border-slate-200 dark:border-slate-700"
+                    title="Klik untuk mengurutkan No RMA"
+                  >
+                    <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                      <span>NO RMA</span>
+                      {sortOrder === 'desc' ? (
+                        <ArrowDownWideNarrow className="w-3.5 h-3.5 text-blue-500" />
+                      ) : (
+                        <ArrowUpNarrowWide className="w-3.5 h-3.5 text-blue-500" />
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">TGL MASUK</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">JENIS RMA</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">NAMA CUST</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">NO HP</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">JENIS BARANG</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">NAMA BARANG</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">SERIAL NUMBER</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">KELUHAN</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">KELENGKAPAN</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">ESTIMASI SELESAI</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap text-right">ESTIMASI BIAYA</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap text-right">DP</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap text-right">SISA</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap text-center">TEKNISI</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap text-center">STATUS</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">DISTRIBUTOR</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">TGL KIRIM KE DISTRI</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">TGL DATANG DARI DISTRI</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">TGL DIAMBIL CUST</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">HASIL GARANSI</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">SN BARU</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">CATATAN</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap text-right">TOTAL BIAYA AKHIR</th>
+                  <th className="px-3 py-3.5 whitespace-nowrap">NO SURAT JALAN</th>
+                  <th className="px-3 sm:px-4 py-3 sm:py-3.5 text-right whitespace-nowrap sticky right-0 z-20 bg-slate-50 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700">AKSI</th>
+                </tr>
+              ) : (
+                <tr>
+                  <th className="p-3 sm:p-3.5 w-8 text-center">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={handleToggleSelectAll}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      aria-label="Pilih Semua Tiket"
+                    />
+                  </th>
+                  <th
+                    onClick={() => setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
+                    className="px-3 sm:px-4 py-3 sm:py-3.5 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition-colors"
+                    title="Klik untuk mengurutkan No RMA"
+                  >
+                    <div className="inline-flex items-center gap-1.5">
+                      <span>No RMA</span>
+                      {sortOrder === 'desc' ? (
+                        <ArrowDownWideNarrow className="w-3.5 h-3.5 text-blue-500" />
+                      ) : (
+                        <ArrowUpNarrowWide className="w-3.5 h-3.5 text-blue-500" />
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-3 sm:px-4 py-3 sm:py-3.5">Tanggal</th>
+                  <th className="px-3 sm:px-4 py-3 sm:py-3.5">Customer</th>
+                  <th className="px-3 sm:px-4 py-3 sm:py-3.5">Perangkat & SN</th>
+                  <th className="px-3 sm:px-4 py-3 sm:py-3.5">Keluhan</th>
+                  <th className="px-3 sm:px-4 py-3 sm:py-3.5">Teknisi</th>
+                  <th className="px-3 sm:px-4 py-3 sm:py-3.5">Status</th>
+                  <th className="px-3 sm:px-4 py-3 sm:py-3.5 text-right">Aksi</th>
+                </tr>
+              )}
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
               {isLoading ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-slate-400 font-medium">
+                  <td colSpan={tableViewMode === 'full' ? 27 : 9} className="text-center py-12 text-slate-400 font-medium">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-300" />
                     Memuat data tiket...
                   </td>
                 </tr>
               ) : sortedTickets.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-slate-400 font-medium">
+                  <td colSpan={tableViewMode === 'full' ? 27 : 9} className="text-center py-12 text-slate-400 font-medium">
                     Tidak ada tiket yang ditemukan
                   </td>
                 </tr>
@@ -383,113 +486,321 @@ function TicketsContent() {
                     <tr
                       key={t.id}
                       className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
-                        isChecked ? 'bg-orange-50/50 dark:bg-orange-950/30' : ''
+                        isChecked ? 'bg-blue-50/50 dark:bg-blue-950/30' : ''
                       }`}
                     >
-                      {/* Checkbox per baris */}
-                      <td className="p-3 sm:p-3.5 text-center">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => handleToggleSelectTicket(t.id)}
-                          className="rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                          aria-label={`Pilih tiket ${t.nomor_layanan}`}
-                        />
-                      </td>
+{tableViewMode === 'full' ? (
+                        <>
+                          {/* 1. Checkbox */}
+                          <td className="w-12 min-w-[48px] max-w-[48px] px-2 py-3 sm:py-3.5 text-center sticky left-0 z-10 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleToggleSelectTicket(t.id)}
+                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                              aria-label={`Pilih tiket ${t.nomor_layanan}`}
+                            />
+                          </td>
 
-                      <td className="px-3 sm:px-4 py-3 sm:py-3.5 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                        <Link
-                          href={`/tickets/${t.id}`}
-                          className="text-orange-600 dark:text-orange-400 hover:underline"
-                        >
-                          {t.nomor_layanan}
-                        </Link>
-                        <div className="mt-0.5">
-                          <ServiceTypeBadge type={t.jenis_layanan} />
-                        </div>
-                      </td>
-
-                      <td className="px-3 sm:px-4 py-3 sm:py-3.5 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                        {formatDateIndo(t.tanggal_masuk)}
-                      </td>
-
-                      <td className="px-3 sm:px-4 py-3 sm:py-3.5">
-                        <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
-                          <span className="truncate max-w-[130px]">{t.nama_customer}</span>
-                          {isStock && (
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 font-extrabold shrink-0">
-                              STOK
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-slate-400 font-mono">{t.no_hp}</div>
-                      </td>
-
-                      <td className="px-3 sm:px-4 py-3 sm:py-3.5 min-w-[130px]">
-                        <div className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">{t.nama_barang}</div>
-                        <div className="text-[11px] font-mono text-slate-400">SN: {t.serial_number}</div>
-                      </td>
-
-                      <td className="px-3 sm:px-4 py-3 sm:py-3.5 max-w-[180px]">
-                        <p className="line-clamp-2 text-xs text-slate-600 dark:text-slate-300" title={t.keluhan}>
-                          {t.keluhan}
-                        </p>
-                        {t.distributor_vendor && (
-                          <span className="inline-block text-[9px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-1 py-0.5 rounded mt-0.5 truncate max-w-[160px]">
-                            {t.distributor_vendor}
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-3 sm:px-4 py-3 sm:py-3.5 font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
-                          {t.teknisi}
-                        </span>
-                      </td>
-
-                      <td className="px-3 sm:px-4 py-3 sm:py-3.5 whitespace-nowrap">
-                        <StatusBadge status={t.status} size="sm" />
-                      </td>
-
-                      <td className="px-3 sm:px-4 py-3 sm:py-3.5 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedReceiptTicket(t)}
-                            title="Cetak Tanda Terima"
-                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
-
-                          {t.distributor_vendor && (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedLabelTicket(t)}
-                              title="Cetak Label Vendor"
-                              className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/50 transition-colors"
+                          {/* 2. NO RMA */}
+                          <td className="px-3 sm:px-4 py-3 sm:py-3.5 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap sticky left-12 z-10 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 border-r border-b border-slate-200/60 dark:border-slate-800">
+                            <Link
+                              href={`/tickets/${t.id}`}
+                              className="text-blue-600 dark:text-blue-400 hover:underline"
                             >
-                              <Truck className="w-4 h-4" />
-                            </button>
-                          )}
+                              {t.nomor_layanan}
+                            </Link>
+                          </td>
 
-                          <Link
-                            href={`/whatsapp?tab=quick&ticket_id=${t.id}`}
-                            title="Kirim Pesan WhatsApp"
-                            className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors"
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                          </Link>
+                          {/* 3. TGL MASUK */}
+                          <td className="px-3 py-3 text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap font-mono">
+                            {formatDateIndo(t.tanggal_masuk)}
+                          </td>
 
-                          <Link
-                            href={`/tickets/${t.id}`}
-                            title="Detail Tiket"
-                            className="p-1.5 rounded-lg text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/50 transition-colors"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </Link>
-                        </div>
-                      </td>
+                          {/* 4. JENIS RMA */}
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <ServiceTypeBadge type={t.jenis_layanan} />
+                          </td>
+
+                          {/* 5. NAMA CUST */}
+                          <td className="px-3 py-3 whitespace-nowrap font-medium text-slate-900 dark:text-white">
+                            <div className="flex items-center gap-1.5">
+                              <span className="max-w-[140px] truncate" title={t.nama_customer}>{t.nama_customer}</span>
+                              {isStock && (
+                                <span className="text-[9px] px-1 py-0.2 rounded bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 font-extrabold shrink-0">
+                                  STOK
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 6. NO HP */}
+                          <td className="px-3 py-3 text-xs font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                            {t.no_hp && t.no_hp !== '-' ? (
+                              <a
+                                href={`https://wa.me/${t.no_hp.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline flex items-center gap-1"
+                                title="Chat WhatsApp"
+                              >
+                                <span>{t.no_hp}</span>
+                              </a>
+                            ) : (
+                              '-'
+                            )}
+                          </td>
+
+                          {/* 7. JENIS BARANG */}
+                          <td className="px-3 py-3 text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap font-medium">
+                            {t.jenis_barang || '-'}
+                          </td>
+
+                          {/* 8. NAMA BARANG */}
+                          <td className="px-3 py-3 text-xs font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap max-w-[180px] truncate" title={t.nama_barang}>
+                            {t.nama_barang}
+                          </td>
+
+                          {/* 9. SERIAL NUMBER */}
+                          <td className="px-3 py-3 text-xs font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                            {t.serial_number || '-'}
+                          </td>
+
+                          {/* 10. KELUHAN */}
+                          <td className="px-3 py-3 text-xs text-slate-600 dark:text-slate-300 max-w-[200px] truncate" title={t.keluhan}>
+                            {t.keluhan}
+                          </td>
+
+                          {/* 11. KELENGKAPAN */}
+                          <td className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400 max-w-[160px] truncate" title={formatKelengkapan(t.kelengkapan)}>
+                            {formatKelengkapan(t.kelengkapan)}
+                          </td>
+
+                          {/* 12. ESTIMASI SELESAI */}
+                          <td className="px-3 py-3 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap font-mono">
+                            {formatDateIndo(t.estimasi_selesai)}
+                          </td>
+
+                          {/* 13. ESTIMASI BIAYA */}
+                          <td className="px-3 py-3 text-xs font-mono text-right text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {formatRupiah(t.estimasi_biaya)}
+                          </td>
+
+                          {/* 14. DP */}
+                          <td className="px-3 py-3 text-xs font-mono text-right text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {formatRupiah(t.dp)}
+                          </td>
+
+                          {/* 15. SISA */}
+                          <td className="px-3 py-3 text-xs font-mono text-right font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                            {formatRupiah(t.sisa)}
+                          </td>
+
+                          {/* 16. TEKNISI */}
+                          <td className="px-3 py-3 text-center whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
+                              {t.teknisi}
+                            </span>
+                          </td>
+
+                          {/* 17. STATUS */}
+                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                            <StatusBadge status={t.status} size="sm" />
+                          </td>
+
+                          {/* 18. DISTRIBUTOR */}
+                          <td className="px-3 py-3 text-xs text-purple-700 dark:text-purple-300 whitespace-nowrap font-medium max-w-[150px] truncate" title={t.distributor_vendor || ''}>
+                            {t.distributor_vendor || '-'}
+                          </td>
+
+                          {/* 19. TGL KIRIM KE DISTRI */}
+                          <td className="px-3 py-3 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap font-mono">
+                            {formatDateIndo(t.tgl_kirim_vendor)}
+                          </td>
+
+                          {/* 20. TGL DATANG DARI DISTRI */}
+                          <td className="px-3 py-3 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap font-mono">
+                            {formatDateIndo(t.tgl_datang_vendor)}
+                          </td>
+
+                          {/* 21. TGL DIAMBIL CUST */}
+                          <td className="px-3 py-3 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap font-mono">
+                            {formatDateIndo(t.tgl_diambil_customer)}
+                          </td>
+
+                          {/* 22. HASIL GARANSI */}
+                          <td className="px-3 py-3 text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap font-medium">
+                            {t.hasil_service_garansi || '-'}
+                          </td>
+
+                          {/* 23. SN BARU */}
+                          <td className="px-3 py-3 text-xs font-mono text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                            {t.sn_baru || '-'}
+                          </td>
+
+                          {/* 24. CATATAN */}
+                          <td className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400 max-w-[180px] truncate" title={t.catatan || ''}>
+                            {t.catatan || '-'}
+                          </td>
+
+                          {/* 25. TOTAL BIAYA AKHIR */}
+                          <td className="px-3 py-3 text-xs font-mono text-right font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                            {formatRupiah(t.biaya_akhir)}
+                          </td>
+
+                          {/* 26. NO SURAT JALAN */}
+                          <td className="px-3 py-3 text-xs font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                            {t.no_surat_jalan || '-'}
+                          </td>
+
+                          {/* 27. AKSI */}
+                          <td className="px-3 sm:px-4 py-3 sm:py-3.5 text-right whitespace-nowrap sticky right-0 z-10 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 border-l border-slate-200/60 dark:border-slate-800">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedReceiptTicket(t)}
+                                title="Cetak Tanda Terima"
+                                className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                              >
+                                <Printer className="w-4 h-4" />
+                              </button>
+
+                              {t.distributor_vendor && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedLabelTicket(t)}
+                                  title="Cetak Label Vendor"
+                                  className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/50 transition-colors"
+                                >
+                                  <Truck className="w-4 h-4" />
+                                </button>
+                              )}
+
+                              <Link
+                                href={`/whatsapp?tab=quick&ticket_id=${t.id}`}
+                                title="Kirim Pesan WhatsApp"
+                                className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors"
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                              </Link>
+
+                              <Link
+                                href={`/tickets/${t.id}`}
+                                title="Detail Tiket"
+                                className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors"
+                              >
+                                <ChevronRight className="w-4 h-4" />
+                              </Link>
+                            </div>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="p-3 sm:p-3.5 text-center">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleToggleSelectTicket(t.id)}
+                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                              aria-label={`Pilih tiket ${t.nomor_layanan}`}
+                            />
+                          </td>
+
+                          <td className="px-3 sm:px-4 py-3 sm:py-3.5 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                            <Link
+                              href={`/tickets/${t.id}`}
+                              className="text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              {t.nomor_layanan}
+                            </Link>
+                            <div className="mt-0.5">
+                              <ServiceTypeBadge type={t.jenis_layanan} />
+                            </div>
+                          </td>
+
+                          <td className="px-3 sm:px-4 py-3 sm:py-3.5 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            {formatDateIndo(t.tanggal_masuk)}
+                          </td>
+
+                          <td className="px-3 sm:px-4 py-3 sm:py-3.5">
+                            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                              <span className="truncate max-w-[130px]">{t.nama_customer}</span>
+                              {isStock && (
+                                <span className="text-[9px] px-1 py-0.2 rounded bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 font-extrabold shrink-0">
+                                  STOK
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-mono">{t.no_hp}</div>
+                          </td>
+
+                          <td className="px-3 sm:px-4 py-3 sm:py-3.5 min-w-[130px]">
+                            <div className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">{t.nama_barang}</div>
+                            <div className="text-[11px] font-mono text-slate-400">SN: {t.serial_number}</div>
+                          </td>
+
+                          <td className="px-3 sm:px-4 py-3 sm:py-3.5 max-w-[180px]">
+                            <p className="line-clamp-2 text-xs text-slate-600 dark:text-slate-300" title={t.keluhan}>
+                              {t.keluhan}
+                            </p>
+                            {t.distributor_vendor && (
+                              <span className="inline-block text-[9px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-1 py-0.5 rounded mt-0.5 truncate max-w-[160px]">
+                                {t.distributor_vendor}
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="px-3 sm:px-4 py-3 sm:py-3.5 font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
+                              {t.teknisi}
+                            </span>
+                          </td>
+
+                          <td className="px-3 sm:px-4 py-3 sm:py-3.5 whitespace-nowrap">
+                            <StatusBadge status={t.status} size="sm" />
+                          </td>
+
+                          <td className="px-3 sm:px-4 py-3 sm:py-3.5 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedReceiptTicket(t)}
+                                title="Cetak Tanda Terima"
+                                className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                              >
+                                <Printer className="w-4 h-4" />
+                              </button>
+
+                              {t.distributor_vendor && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedLabelTicket(t)}
+                                  title="Cetak Label Vendor"
+                                  className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/50 transition-colors"
+                                >
+                                  <Truck className="w-4 h-4" />
+                                </button>
+                              )}
+
+                              <Link
+                                href={`/whatsapp?tab=quick&ticket_id=${t.id}`}
+                                title="Kirim Pesan WhatsApp"
+                                className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors"
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                              </Link>
+
+                              <Link
+                                href={`/tickets/${t.id}`}
+                                title="Detail Tiket"
+                                className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors"
+                              >
+                                <ChevronRight className="w-4 h-4" />
+                              </Link>
+                            </div>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   );
                 })

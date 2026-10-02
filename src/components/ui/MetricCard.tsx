@@ -46,10 +46,10 @@ export function MetricCard({
       pill: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
     },
     orange: {
-      bg: 'bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400',
-      border: 'border-orange-200 dark:border-orange-900/50',
-      activeBorder: 'border-orange-500 dark:border-orange-500 ring-2 ring-orange-500/20',
-      pill: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300'
+      bg: 'bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
+      border: 'border-blue-200 dark:border-blue-900/50',
+      activeBorder: 'border-blue-500 dark:border-blue-500 ring-2 ring-blue-500/20',
+      pill: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
     },
     rose: {
       bg: 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400',

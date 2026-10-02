@@ -196,7 +196,7 @@ export default function SuratJalanPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <Truck className="w-6 h-6 sm:w-7 sm:h-7 text-orange-500" />
+            <Truck className="w-6 h-6 sm:w-7 sm:h-7 text-blue-500" />
             Manajemen Surat Jalan Vendor
           </h1>
         </div>
@@ -215,7 +215,7 @@ export default function SuratJalanPage() {
           <button
             type="button"
             onClick={handleOpenCreateModal}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 active:scale-95 shadow-md shadow-orange-500/20 rounded-xl transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold text-white bg-blue-500 hover:bg-blue-600 active:scale-95 shadow-md shadow-blue-500/20 rounded-xl transition-all"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Buat Surat Jalan</span>
@@ -253,7 +253,7 @@ export default function SuratJalanPage() {
               {isLoading ? (
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-slate-400 font-medium">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-orange-500" />
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-500" />
                     Memuat data surat jalan...
                   </td>
                 </tr>
@@ -269,7 +269,7 @@ export default function SuratJalanPage() {
                     <td className="px-3 sm:px-4 py-3 sm:py-3.5 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
                       <Link
                         href={`/surat-jalan/print/${sj.no_surat_jalan}`}
-                        className="text-orange-600 dark:text-orange-400 hover:underline"
+                        className="text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         {sj.no_surat_jalan}
                       </Link>
@@ -439,14 +439,14 @@ export default function SuratJalanPage() {
                     <label
                       key={t.id}
                       className={`flex items-start gap-3 p-2.5 sm:p-3 text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
-                        isChecked ? 'bg-orange-50/60 dark:bg-orange-950/40' : ''
+                        isChecked ? 'bg-blue-50/60 dark:bg-blue-950/40' : ''
                       }`}
                     >
                       <input
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => handleToggleTicketSelect(t.id)}
-                        className="mt-0.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+                        className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -488,7 +488,7 @@ export default function SuratJalanPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs disabled:opacity-50"
+              className="px-5 py-2 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs disabled:opacity-50"
             >
               {isSubmitting ? 'Membuat...' : 'Buat Surat Jalan'}
             </button>

@@ -19,14 +19,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Truck,
-  Plus,
-  Lock,
-  Eye,
-  EyeOff
+  Plus
 } from 'lucide-react';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Modal } from '@/components/ui/Modal';
 
 interface PageMeta {
   title: string;
@@ -61,17 +57,12 @@ const PAGE_META_MAP: Record<string, PageMeta> = {
   '/logs': {
     title: 'Audit Log Trail',
     subtitle: 'Riwayat lengkap aktivitas dan perubahan status sistem'
+  },
+  '/users': {
+    title: 'Manajemen Pengguna',
+    subtitle: 'Kelola akun teknisi, hak akses role admin & persetujuan login'
   }
 };
-
-const ALL_PROFILES = [
-  { username: 'admin', name: 'Admin', role: 'Administrasi & Kasir', type: 'ADMIN' },
-  { username: 'wandi', name: 'Wandi', role: 'Teknisi Utama', type: 'TEKNISI' },
-  { username: 'satryo', name: 'Satryo', role: 'Teknisi Servis', type: 'TEKNISI' },
-  { username: 'derida', name: 'Derida', role: 'Teknisi', type: 'TEKNISI' },
-  { username: 'anzar', name: 'Anzar', role: 'Teknisi', type: 'TEKNISI' },
-  { username: 'sales', name: 'Sales Toko', role: 'Stok BCT & GHITP', type: 'SALES' }
-];
 
 function TopbarContent() {
   const router = useRouter();
@@ -79,55 +70,15 @@ function TopbarContent() {
   const searchParams = useSearchParams();
   const currentTab = searchParams ? searchParams.get('tab') : null;
   const { toggleMobileSidebar, theme, setTheme } = useTheme();
-  const { user, logout, login } = useAuth();
+  const { user, logout } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; title: string; time: string; type: string }[]>([]);
 
-  // Switch user states
-  const [switchTarget, setSwitchTarget] = useState<(typeof ALL_PROFILES)[0] | null>(null);
-  const [switchPassword, setSwitchPassword] = useState('');
-  const [showSwitchPassword, setShowSwitchPassword] = useState(false);
-  const [switchError, setSwitchError] = useState('');
-  const [isSwitching, setIsSwitching] = useState(false);
-
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
-
-  const handleSelectSwitchUser = (profile: (typeof ALL_PROFILES)[0]) => {
-    setIsUserDropdownOpen(false);
-    if (user?.username === profile.username) return;
-    setSwitchTarget(profile);
-    setSwitchPassword('');
-    setSwitchError('');
-    setShowSwitchPassword(false);
-  };
-
-  const handleSwitchSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!switchTarget) return;
-
-    if (!switchPassword) {
-      setSwitchError('Masukkan kata sandi untuk akun ini');
-      return;
-    }
-
-    setIsSwitching(true);
-    setSwitchError('');
-
-    const res = await login(switchTarget.username, switchPassword);
-    setIsSwitching(false);
-
-    if (res.success) {
-      setSwitchTarget(null);
-      setSwitchPassword('');
-      router.refresh();
-    } else {
-      setSwitchError(res.error || 'Kata sandi tidak sesuai');
-    }
-  };
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -270,7 +221,7 @@ function TopbarContent() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-1.5 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700/80 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 focus:outline-hidden transition-all"
+              className="w-full pl-9 pr-3.5 py-1.5 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700/80 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden transition-all"
             />
           </div>
         </form>
@@ -310,7 +261,7 @@ function TopbarContent() {
                       key={n.id}
                       className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-start gap-2.5 text-left text-xs"
                     >
-                      <div className="p-1 rounded-lg bg-cyan-100 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5">
+                      <div className="p-1 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
                         <Clock className="w-3.5 h-3.5" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -326,7 +277,7 @@ function TopbarContent() {
                 <Link
                   href="/tickets"
                   onClick={() => setIsNotificationsOpen(false)}
-                  className="block text-center text-[11px] font-bold text-cyan-600 dark:text-cyan-400 hover:underline py-1"
+                  className="block text-center text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline py-1"
                 >
                   Lihat Semua Tiket Servis →
                 </Link>
@@ -343,7 +294,7 @@ function TopbarContent() {
             className="flex items-center gap-2.5 p-1 sm:pl-1.5 sm:pr-2.5 sm:py-1 rounded-full sm:rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all text-left"
           >
             {/* Initials Circle */}
-            <div className="w-8 h-8 rounded-full bg-cyan-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 tracking-tight">
+            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 tracking-tight">
               {userInitials}
             </div>
 
@@ -380,7 +331,7 @@ function TopbarContent() {
                     onClick={() => setTheme('light')}
                     className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[11px] font-medium transition-colors ${
                       theme === 'light'
-                        ? 'bg-white dark:bg-slate-800 text-cyan-600 shadow-2xs'
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-2xs'
                         : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
@@ -392,7 +343,7 @@ function TopbarContent() {
                     onClick={() => setTheme('dark')}
                     className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[11px] font-medium transition-colors ${
                       theme === 'dark'
-                        ? 'bg-white dark:bg-slate-800 text-cyan-400 shadow-2xs'
+                        ? 'bg-white dark:bg-slate-800 text-blue-400 shadow-2xs'
                         : 'text-slate-500 hover:text-white'
                     }`}
                   >
@@ -404,7 +355,7 @@ function TopbarContent() {
                     onClick={() => setTheme('system')}
                     className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[11px] font-medium transition-colors ${
                       theme === 'system'
-                        ? 'bg-white dark:bg-slate-800 text-cyan-600 shadow-2xs'
+                        ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-2xs'
                         : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
@@ -414,39 +365,26 @@ function TopbarContent() {
                 </div>
               </div>
 
-              {/* Switch User Profiles */}
-              <div className="px-2 pt-1">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Ganti Pengguna</div>
-                <div className="space-y-0.5 max-h-40 overflow-y-auto">
-                  {ALL_PROFILES.map((p) => (
-                    <button
-                      key={p.username}
-                      type="button"
-                      onClick={() => handleSelectSwitchUser(p)}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left ${
-                        user?.username === p.username || currentUserName === p.name
-                          ? 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 font-semibold'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-medium">{p.name}</div>
-                        <div className="text-[10px] text-slate-400">{p.role}</div>
-                      </div>
-                      {(user?.username === p.username || currentUserName === p.name) && (
-                        <ShieldCheck className="w-3.5 h-3.5 text-cyan-600" />
-                      )}
-                    </button>
-                  ))}
+              {/* Admin Link to Manajemen User */}
+              {user?.role === 'ADMIN' && (
+                <div className="px-2 pb-1.5 border-b border-slate-100 dark:border-slate-700/60">
+                  <Link
+                    href="/users"
+                    onClick={() => setIsUserDropdownOpen(false)}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Manajemen User (Admin)</span>
+                  </Link>
                 </div>
-              </div>
+              )}
 
               {/* Logout Button */}
-              <div className="pt-1 border-t border-slate-100 dark:border-slate-700/60">
+              <div className="p-1.5 border-t border-slate-100 dark:border-slate-700/60">
                 <button
                   type="button"
                   onClick={() => logout()}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors font-semibold text-left"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors font-semibold text-left cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Keluar (Logout)</span>
@@ -456,82 +394,6 @@ function TopbarContent() {
           )}
         </div>
       </div>
-
-      {/* Switch User Confirmation Modal */}
-      {switchTarget && (
-        <Modal
-          isOpen={!!switchTarget}
-          onClose={() => setSwitchTarget(null)}
-          title="Konfirmasi Ganti Pengguna"
-          subtitle={`Masuk sebagai ${switchTarget.name}`}
-          maxWidth="sm"
-        >
-          <form onSubmit={handleSwitchSubmit} className="space-y-4">
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
-                {switchTarget.name.slice(0, 2).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                  {switchTarget.name}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {switchTarget.role}
-                </p>
-              </div>
-            </div>
-
-            {switchError && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
-                <span>{switchError}</span>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                Kata Sandi (Password) *
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type={showSwitchPassword ? 'text' : 'password'}
-                  value={switchPassword}
-                  onChange={(e) => setSwitchPassword(e.target.value)}
-                  placeholder="Masukkan kata sandi..."
-                  autoFocus
-                  className="w-full pl-9 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden focus:border-cyan-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowSwitchPassword(!showSwitchPassword)}
-                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 absolute right-2.5 top-1/2 -translate-y-1/2"
-                  tabIndex={-1}
-                >
-                  {showSwitchPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setSwitchTarget(null)}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-xl"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={isSwitching}
-                className="px-5 py-2 bg-cyan-600 hover:bg-cyan-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs disabled:opacity-50"
-              >
-                {isSwitching ? 'Memverifikasi...' : 'Masuk Akun'}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
     </header>
   );
 }

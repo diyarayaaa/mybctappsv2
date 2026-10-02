@@ -75,7 +75,7 @@ export default function PrintSuratJalanPage({
         <button
           type="button"
           onClick={handlePrint}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-orange-500/20 transition-all"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-blue-500/20 transition-all"
         >
           <Printer className="w-4 h-4" />
           <span>Cetak Surat Jalan (Ctrl+P)</span>
@@ -96,7 +96,7 @@ export default function PrintSuratJalanPage({
             <h1 className="text-2xl font-black tracking-tight text-slate-900">
               {COMPANY_INFO.name}
             </h1>
-            <p className="text-xs font-bold text-orange-600 uppercase tracking-widest">
+            <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">
               {COMPANY_INFO.subName}
             </p>
             <p className="text-xs text-slate-600 mt-1">{COMPANY_INFO.address}</p>
@@ -105,7 +105,7 @@ export default function PrintSuratJalanPage({
 
           <div className="text-right">
             <div className="inline-block bg-slate-900 text-white px-4 py-2 rounded-lg text-center">
-              <span className="text-[10px] uppercase font-bold tracking-widest block text-orange-400">
+              <span className="text-[10px] uppercase font-bold tracking-widest block text-blue-400">
                 SURAT JALAN VENDOR
               </span>
               <span className="text-lg font-mono font-extrabold tracking-wider">

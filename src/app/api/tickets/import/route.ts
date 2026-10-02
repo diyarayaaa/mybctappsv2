@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/db';
 import * as XLSX from 'xlsx';
-import path from 'path';
-import fs from 'fs';
 
 function parseIndoDate(val: any): string | null {
   if (val === null || val === undefined || val === '') return null;
@@ -93,44 +91,34 @@ function parseKelengkapan(val: any): string {
 export async function POST(req: NextRequest) {
   try {
     let rows: any[][] = [];
-    const contentType = req.headers.get('content-type') || '';
+    const formData = await req.formData();
+    const file = formData.get('file') as File | null;
+    const resetBeforeImport = formData.get('resetBeforeImport') === 'true';
 
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await req.formData();
-      const file = formData.get('file') as File | null;
-      const usePreset = formData.get('usePreset') as string | null;
+    if (!file) {
+      return NextResponse.json({ error: 'Tidak ada file yang diunggah. Silakan pilih file CSV atau Excel.' }, { status: 400 });
+    }
 
-      if (usePreset) {
-        // Read file from public folder directly
-        const presetPath = path.join(process.cwd(), 'public', usePreset);
-        if (fs.existsSync(presetPath)) {
-          const buffer = fs.readFileSync(presetPath);
-          const wb = XLSX.read(buffer, { type: 'buffer', cellDates: false });
-          const firstSheet = wb.Sheets[wb.SheetNames[0]];
-          rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: true }) as any[][];
-        } else {
-          return NextResponse.json({ error: `File preset ${usePreset} tidak ditemukan di folder public` }, { status: 404 });
-        }
-      } else if (file) {
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const wb = XLSX.read(buffer, { type: 'buffer', cellDates: false });
-        const firstSheet = wb.Sheets[wb.SheetNames[0]];
-        rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: true }) as any[][];
-      } else {
-        return NextResponse.json({ error: 'Tidak ada file yang diunggah' }, { status: 400 });
-      }
-    } else {
-      // JSON body
-      const body = await req.json();
-      if (body.usePreset) {
-        const presetPath = path.join(process.cwd(), 'public', body.usePreset);
-        if (fs.existsSync(presetPath)) {
-          const buffer = fs.readFileSync(presetPath);
-          const wb = XLSX.read(buffer, { type: 'buffer', cellDates: false });
-          const firstSheet = wb.Sheets[wb.SheetNames[0]];
-          rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: true }) as any[][];
-        }
+    const fileName = file.name || 'data.xlsx';
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    let detectedFormat = 'Spreadsheet';
+    if (ext === 'csv') detectedFormat = 'CSV (Comma / Semicolon Delimited)';
+    else if (ext === 'xlsx') detectedFormat = 'Microsoft Excel (.xlsx)';
+    else if (ext === 'xls') detectedFormat = 'Microsoft Excel 97-2003 (.xls)';
+    else if (ext === 'tsv') detectedFormat = 'TSV (Tab-Separated Values)';
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Read with SheetJS - auto-detects XLSX, XLS, CSV, TSV, etc.
+    const wb = XLSX.read(buffer, { type: 'buffer', cellDates: false });
+    let maxRows = 0;
+    for (const name of wb.SheetNames) {
+      const s = wb.Sheets[name];
+      const testRows = XLSX.utils.sheet_to_json(s, { header: 1, raw: true }) as any[][];
+      if (testRows && testRows.length > maxRows) {
+        maxRows = testRows.length;
+        rows = testRows;
       }
     }
 
@@ -138,45 +126,82 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Data spreadsheet kosong atau tidak memiliki baris data' }, { status: 400 });
     }
 
-    const header = rows[0].map((h: any) => String(h || '').trim().toUpperCase());
-    
-    // Find column indexes
-    const findCol = (...names: string[]) => {
-      for (const name of names) {
-        const idx = header.findIndex(h => h.includes(name));
-        if (idx !== -1) return idx;
+    // 1. Find Header Row dynamically (scan first 15 rows for known header keywords)
+    let headerRowIndex = 0;
+    let maxMatchCount = 0;
+    const headerKeywords = ['RMA', 'NO', 'CUSTOMER', 'CUST', 'NAMA', 'BARANG', 'TANGGAL', 'TGL', 'STATUS', 'TEKNISI', 'KELUHAN'];
+
+    for (let r = 0; r < Math.min(rows.length, 15); r++) {
+      const candidateRow = rows[r];
+      if (!candidateRow || !Array.isArray(candidateRow) || candidateRow.length === 0) continue;
+
+      let matchCount = 0;
+      for (let c = 0; c < candidateRow.length; c++) {
+        const cell = candidateRow[c];
+        if (cell !== undefined && cell !== null) {
+          const str = String(cell).trim().toUpperCase();
+          if (str && headerKeywords.some(kw => str.includes(kw))) {
+            matchCount++;
+          }
+        }
+      }
+
+      if (matchCount > maxMatchCount) {
+        maxMatchCount = matchCount;
+        headerRowIndex = r;
+      }
+    }
+
+    const headerRow = rows[headerRowIndex].map(h => String(h || '').trim().toUpperCase());
+
+    const findCol = (...synonyms: string[]) => {
+      for (const syn of synonyms) {
+        const synUpper = syn.toUpperCase();
+        // Exact match first
+        const exact = headerRow.findIndex(h => h === synUpper);
+        if (exact !== -1) return exact;
+        // Contains match
+        const found = headerRow.findIndex(h => h.includes(synUpper));
+        if (found !== -1) return found;
       }
       return -1;
     };
 
-    const idxRma = findCol('NO RMA', 'RMA', 'NOMOR');
-    const idxTglMasuk = findCol('TGL MASUK', 'TANGGAL MASUK');
-    const idxJenis = findCol('JENIS RMA', 'JENIS LAYANAN', 'JENIS');
-    const idxNamaCust = findCol('NAMA CUST', 'CUSTOMER', 'NAMA');
-    const idxNoHp = findCol('NO HP', 'TELEPON', 'HP', 'WHATSAPP');
-    const idxJenisBarang = findCol('JENIS BARANG', 'KATEGORI');
-    const idxNamaBarang = findCol('NAMA BARANG', 'PERANGKAT');
-    const idxSn = findCol('SERIAL NUMBER', 'SN');
-    const idxKeluhan = findCol('KELUHAN', 'KERUSAKAN');
-    const idxKelengkapan = findCol('KELENGKAPAN');
-    const idxEstimasi = findCol('ESTIMASI SELESAI');
-    const idxBiaya = findCol('ESTIMASI BIAYA');
-    const idxDp = findCol('DP');
-    const idxSisa = findCol('SISA');
-    const idxTeknisi = findCol('TEKNISI');
-    const idxStatus = findCol('STATUS');
-    const idxDistributor = findCol('DISTRIBUTOR', 'VENDOR');
-    const idxTglKirim = findCol('TGL KIRIM KE DISTRI', 'TGL KIRIM');
-    const idxTglDatang = findCol('TGL DATANG DARI DISTRI', 'TGL DATANG');
-    const idxTglAmbil = findCol('TGL DIAMBIL CUST', 'TGL DIAMBIL');
+    const idxRma = findCol('NO RMA', 'NOMOR RMA', 'NO LAYANAN', 'RMA', 'NOMOR', 'NO.');
+    const idxTglMasuk = findCol('TGL MASUK', 'TANGGAL MASUK', 'TGL DAFTAR', 'MASUK', 'TANGGAL');
+    const idxJenis = findCol('JENIS RMA', 'JENIS LAYANAN', 'JENIS', 'TIPE');
+    const idxNamaCust = findCol('NAMA CUST', 'NAMA CUSTOMER', 'NAMA PELANGGAN', 'CUSTOMER', 'NAMA');
+    const idxNoHp = findCol('NO HP', 'NO TELEPON', 'NO TELP', 'HP', 'WHATSAPP', 'WA', 'TELP');
+    const idxJenisBarang = findCol('JENIS BARANG', 'KATEGORI BARANG', 'KATEGORI');
+    const idxNamaBarang = findCol('NAMA BARANG', 'PERANGKAT', 'TYPE BARANG', 'TIPE BARANG', 'BARANG');
+    const idxSn = findCol('SERIAL NUMBER', 'SN', 'NO SERI', 'SERIAL');
+    const idxKeluhan = findCol('KELUHAN', 'KERUSAKAN', 'KENDALA', 'PROBLEM');
+    const idxKelengkapan = findCol('KELENGKAPAN', 'AKSESORIS');
+    const idxEstimasi = findCol('ESTIMASI SELESAI', 'ESTIMASI', 'TARGET SELESAI');
+    const idxTeknisi = findCol('TEKNISI', 'PIC', 'HANDLE BY');
+    const idxStatus = findCol('STATUS', 'STATUS SERVIS', 'STATUS TIKET');
+    const idxEstimasiBiaya = findCol('ESTIMASI BIAYA', 'BIAYA ESTIMASI', 'TARIF');
+    const idxDp = findCol('DP', 'UANG MUKA');
+    const idxSisa = findCol('SISA', 'SISA PEMBAYARAN');
+    const idxVendor = findCol('DISTRIBUTOR', 'VENDOR', 'SUPLIER', 'DISTRI');
+    const idxTglKirim = findCol('TGL KIRIM KE DISTRI', 'TGL KIRIM VENDOR', 'TGL KIRIM');
+    const idxTglDatang = findCol('TGL DATANG DARI DISTRI', 'TGL DATANG VENDOR', 'TGL DATANG');
+    const idxTglAmbil = findCol('TGL DIAMBIL CUST', 'TGL DIAMBIL', 'TGL AMBIL');
     const idxHasil = findCol('HASIL GARANSI', 'HASIL');
     const idxSnBaru = findCol('SN BARU');
-    const idxCatatan = findCol('CATATAN');
-    const idxBiayaAkhir = findCol('TOTAL BIAYA AKHIR', 'BIAYA AKHIR');
-    const idxNoSj = findCol('NO SURAT JALAN', 'SURAT JALAN');
+    const idxCatatan = findCol('CATATAN', 'KETERANGAN');
+    const idxBiayaAkhir = findCol('TOTAL BIAYA AKHIR', 'BIAYA AKHIR', 'TOTAL BIAYA');
+    const idxNoSj = findCol('NO SURAT JALAN', 'SURAT JALAN', 'NO SJ');
 
     const db = getDatabase();
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    // If reset before import is selected, wipe existing tickets & history clean
+    if (resetBeforeImport) {
+      db.exec('DELETE FROM tickets;');
+      db.exec('DELETE FROM surat_jalan;');
+      db.exec('DELETE FROM audit_logs;');
+    }
 
     const insertStmt = db.prepare(`
       INSERT INTO tickets (
@@ -226,68 +251,85 @@ export async function POST(req: NextRequest) {
     db.exec('BEGIN TRANSACTION');
 
     try {
-      for (let i = 1; i < rows.length; i++) {
+      for (let i = headerRowIndex + 1; i < rows.length; i++) {
         const row = rows[i];
-        if (!row || row.length === 0) continue;
+        if (!row || !Array.isArray(row) || row.length === 0) continue;
 
-        const val = (idx: number) => (idx !== -1 && row[idx] !== undefined ? String(row[idx]).trim() : '');
-        const getRaw = (idx: number) => (idx !== -1 && row[idx] !== undefined ? row[idx] : null);
+        const val = (idx: number) => {
+          if (idx < 0 || idx >= row.length) return '';
+          const cell = row[idx];
+          return cell !== undefined && cell !== null ? String(cell).trim() : '';
+        };
 
-        const noRma = val(idxRma !== -1 ? idxRma : 0);
-        if (!noRma || !noRma.toUpperCase().startsWith('BCTRS')) {
+        const getRaw = (idx: number) => {
+          if (idx < 0 || idx >= row.length) return null;
+          const cell = row[idx];
+          return cell !== undefined ? cell : null;
+        };
+
+        let noRma = val(idxRma !== -1 ? idxRma : 0);
+        const namaCust = val(idxNamaCust) || 'Pelanggan';
+        const namaBarang = val(idxNamaBarang) || '-';
+
+        // Check if row is purely blank or header repeated
+        if (!noRma && namaCust === 'Pelanggan' && namaBarang === '-') {
           skippedCount++;
           continue;
+        }
+
+        if (noRma.toUpperCase() === 'NO RMA' || noRma.toUpperCase() === 'RMA' || noRma.toUpperCase() === 'NOMOR') {
+          skippedCount++;
+          continue;
+        }
+
+        // If noRma is empty but there's customer or barang, generate fallback RMA
+        if (!noRma) {
+          noRma = `BCTRS26-${String(importedCount + 1).padStart(4, '0')}`;
         }
 
         const tglMasuk = parseIndoDate(getRaw(idxTglMasuk)) || now;
         const rawJenis = val(idxJenis).toUpperCase();
         const jenisLayanan = rawJenis.includes('GARANSI') ? 'GARANSI' : 'SERVICE';
-        const namaCust = val(idxNamaCust) || 'Pelanggan';
         const noHp = val(idxNoHp) || '-';
         const jenisBarang = val(idxJenisBarang) || 'Other';
-        const namaBarang = val(idxNamaBarang) || '-';
         const sn = val(idxSn) || '-';
-        const keluhan = val(idxKeluhan) || '-';
+        const keluhan = val(idxKeluhan) || 'Pengecekan unit';
         const kelengkapan = parseKelengkapan(val(idxKelengkapan));
         const estimasiSelesai = parseIndoDate(getRaw(idxEstimasi));
-        const estimasiBiaya = cleanNum(val(idxBiaya));
-        const dp = cleanNum(val(idxDp));
-        const sisa = cleanNum(val(idxSisa));
-        const teknisi = val(idxTeknisi) || 'Wandi';
-        const rawStatus = val(idxStatus);
-        let status = '';
-        if (jenisLayanan === 'GARANSI') {
-          const upper = rawStatus.toUpperCase().trim();
-          if (!upper || upper === '-' || upper === 'KOSONG') {
-            status = ''; // JANGAN diberi status dulu jika kosong
-          } else if (upper.includes('SELESAI') && upper.includes('DIAMBIL') && !upper.includes('BELUM') && !upper.includes('NUNGGU')) {
-            status = 'SELESAI & DIAMBIL';
-          } else if (upper.includes('BELUM DIAMBIL') || upper.includes('NUNGGU DIAMBIL') || upper.includes('SIAP AMBIL')) {
-            status = 'SELESAI BELUM DIAMBIL';
-          } else if (upper.includes('GAGAL')) {
-            status = 'GAGAL SERVICE/GARANSI';
-          } else if (upper.includes('PROSES GARANSI') || upper.includes('PROSES') || upper.includes('GARANSI')) {
-            status = 'PROSES GARANSI';
-          } else {
-            status = '';
-          }
-        } else {
-          const upper = rawStatus.toUpperCase().trim();
-          if (upper.includes('PENDING')) {
-            status = 'PENDING SERVICE';
-          } else if (upper.includes('ALIH')) {
-            status = 'ALIH SERVICE';
-          } else if (upper.includes('SELESAI') && upper.includes('DIAMBIL') && !upper.includes('BELUM') && !upper.includes('NUNGGU')) {
-            status = 'SELESAI & DIAMBIL';
-          } else if (upper.includes('BELUM DIAMBIL') || upper.includes('NUNGGU DIAMBIL') || upper.includes('SIAP AMBIL')) {
-            status = 'SELESAI BELUM DIAMBIL';
-          } else if (upper.includes('GAGAL')) {
-            status = 'GAGAL SERVICE/GARANSI';
-          } else {
-            status = 'PROSES SERVICE';
-          }
+
+        let rawTeknisi = val(idxTeknisi).toLowerCase();
+        let teknisi = 'Wandi';
+        if (rawTeknisi.includes('satryo')) teknisi = 'Satryo';
+        else if (rawTeknisi.includes('derida')) teknisi = 'Derida';
+        else if (rawTeknisi.includes('anzar')) teknisi = 'Anzar';
+        else if (rawTeknisi.includes('wandi')) teknisi = 'Wandi';
+        else if (rawTeknisi.includes('admin')) teknisi = 'Admin';
+        else if (rawTeknisi.includes('sales')) teknisi = 'Sales';
+        else if (val(idxTeknisi)) teknisi = val(idxTeknisi);
+
+        const rawStatus = val(idxStatus).toUpperCase();
+        let status = 'PROSES SERVICE';
+        if (rawStatus.includes('SELESAI') && (rawStatus.includes('BELUM') || rawStatus.includes('SIAP'))) {
+          status = 'SELESAI BELUM DIAMBIL';
+        } else if (rawStatus.includes('SELESAI') && rawStatus.includes('DIAMBIL')) {
+          status = 'SELESAI & DIAMBIL';
+        } else if (rawStatus.includes('GAGAL') || rawStatus.includes('CANCEL') || rawStatus.includes('BATAL')) {
+          status = 'GAGAL SERVICE/GARANSI';
+        } else if (rawStatus.includes('PENDING') || rawStatus.includes('TUNGGU') || rawStatus.includes('WAITING')) {
+          status = 'PENDING SERVICE';
+        } else if (rawStatus.includes('ALIH')) {
+          status = 'ALIH SERVICE';
+        } else if (rawStatus.includes('GARANSI') || rawStatus.includes('DISTRI') || rawStatus.includes('VENDOR')) {
+          status = 'PROSES GARANSI';
+        } else if (jenisLayanan === 'GARANSI') {
+          status = 'PROSES GARANSI';
         }
-        const distributor = val(idxDistributor) || null;
+
+        const estimasiBiaya = cleanNum(val(idxEstimasiBiaya));
+        const dp = cleanNum(val(idxDp));
+        const sisa = cleanNum(val(idxSisa)) || Math.max(0, estimasiBiaya - dp);
+
+        const distributor = val(idxVendor) || null;
         const tglKirimVendor = parseIndoDate(getRaw(idxTglKirim));
         const tglDatangVendor = parseIndoDate(getRaw(idxTglDatang));
         const tglDiambilCust = parseIndoDate(getRaw(idxTglAmbil));
@@ -297,7 +339,7 @@ export async function POST(req: NextRequest) {
         const totalBiayaAkhir = cleanNum(val(idxBiayaAkhir));
         const noSuratJalan = val(idxNoSj) || null;
 
-        const ticketId = 'imp-' + noRma;
+        const ticketId = 'imp-' + noRma.replace(/[^a-zA-Z0-9_-]/g, '_');
 
         insertStmt.run(
           ticketId, noRma, tglMasuk, jenisLayanan, namaCust, noHp,
@@ -320,10 +362,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      detectedFormat,
       importedCount,
       skippedCount,
       totalInDb,
-      message: `Berhasil mengimpor ${importedCount} data tiket ke database.`
+      message: `Berhasil mengimpor ${importedCount} data tiket dari file ${fileName} (${detectedFormat}).`
     });
   } catch (error: any) {
     console.error('API Import Error:', error);

@@ -5,8 +5,11 @@
 :root {
   --primary-navy: #0f172a;
   --secondary-navy: #1e293b;
-  --accent-orange: #f97316;
-  --accent-orange-hover: #ea580c;
+  --accent-blue: #2563eb;
+  --accent-blue-hover: #1d4ed8;
+  --accent-cobalt: #2b4bee;
+  --accent-orange: #2563eb;
+  --accent-orange-hover: #1d4ed8;
   --bg-content: #f8fafc;
 }
 

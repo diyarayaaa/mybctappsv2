@@ -49,7 +49,7 @@ export function Modal({
   }[maxWidth];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200 print:static print:block print:p-0 print:m-0 print:overflow-visible print:z-auto">
+    <div className="fixed inset-0 z-[70] overflow-y-auto flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200 print:static print:block print:p-0 print:m-0 print:overflow-visible print:z-auto">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity print:hidden"

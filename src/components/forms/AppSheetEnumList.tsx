@@ -98,7 +98,7 @@ export function AppSheetEnumList({
           {label} {required && '*'}
         </label>
         {selectedValues.length > 0 && (
-          <span className="text-[11px] font-bold text-orange-600 dark:text-orange-400">
+          <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
             {selectedValues.length} item dipilih
           </span>
         )}
@@ -109,7 +109,7 @@ export function AppSheetEnumList({
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full min-h-[42px] px-3.5 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 select-none ${
           isOpen
-            ? 'border-orange-500 ring-2 ring-orange-500/20 bg-white dark:bg-slate-800'
+            ? 'border-blue-500 ring-2 ring-blue-500/20 bg-white dark:bg-slate-800'
             : 'border-slate-300 dark:border-slate-700'
         }`}
       >
@@ -122,7 +122,7 @@ export function AppSheetEnumList({
             {selectedValues.map((val) => (
               <span
                 key={val}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-orange-100 dark:bg-orange-950 text-orange-800 dark:text-orange-200 text-xs font-bold border border-orange-200 dark:border-orange-800/60 shadow-2xs"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-200 text-xs font-bold border border-blue-200 dark:border-blue-800/60 shadow-2xs"
               >
                 <span className="truncate max-w-[180px] sm:max-w-[280px]">{val}</span>
                 <button
@@ -140,7 +140,7 @@ export function AppSheetEnumList({
 
         <ChevronDown
           className={`w-4 h-4 text-slate-400 transition-transform shrink-0 ${
-            isOpen ? 'rotate-180 text-orange-500' : ''
+            isOpen ? 'rotate-180 text-blue-500' : ''
           }`}
         />
       </div>
@@ -180,12 +180,12 @@ export function AppSheetEnumList({
 
           {/* Add New Item Button (AppSheet Style 'Allow Other Values') */}
           {searchTerm.trim() && !isExactMatch && (
-            <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-orange-50/50 dark:bg-orange-950/30">
+            <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-blue-50/50 dark:bg-blue-950/30">
               <button
                 type="button"
                 onClick={handleAddNew}
                 disabled={isAddingNew}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
               >
                 <div className="flex items-center gap-1.5 truncate">
                   <Plus className="w-4 h-4 shrink-0" />
@@ -193,7 +193,7 @@ export function AppSheetEnumList({
                     + Tambah & Simpan: <strong className="underline">&quot;{searchTerm.trim()}&quot;</strong>
                   </span>
                 </div>
-                <span className="text-[10px] bg-orange-600 px-1.5 py-0.5 rounded text-orange-100 font-semibold shrink-0">
+                <span className="text-[10px] bg-blue-600 px-1.5 py-0.5 rounded text-blue-100 font-semibold shrink-0">
                   {isAddingNew ? 'Menyimpan...' : 'Enter ↵'}
                 </span>
               </button>
@@ -210,7 +210,7 @@ export function AppSheetEnumList({
               <div className="p-4 text-center text-xs text-slate-400">
                 Tidak ada keluhan yang cocok dengan &quot;{searchTerm}&quot;.
                 <br />
-                <span className="text-[11px] text-orange-600 dark:text-orange-400 font-semibold">
+                <span className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold">
                   Gunakan tombol &quot;+ Tambah & Simpan&quot; di atas untuk menjadikannya opsi baru.
                 </span>
               </div>
@@ -249,7 +249,7 @@ export function AppSheetEnumList({
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="font-bold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
+              className="font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
             >
               Selesai Memilih
             </button>

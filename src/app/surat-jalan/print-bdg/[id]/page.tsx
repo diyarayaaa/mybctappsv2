@@ -64,7 +64,7 @@ export default function PrintSuratJalanBdgPage({
           <ArrowLeft className="w-4 h-4" /> Kembali ke Manajemen Surat Jalan
         </Link>
         <button type="button" onClick={handlePrint}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all">
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all">
           <Printer className="w-4 h-4" /> Cetak Surat Jalan BDG (4 stiker/A4)
         </button>
       </div>
