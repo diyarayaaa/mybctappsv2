@@ -232,7 +232,6 @@ export default function DashboardPage() {
         <MetricCard
           title="Masuk Hari Ini"
           value={stats.barangMasukHariIni}
-          subtitle="Tiket Baru Masuk"
           icon={PackagePlus}
           colorScheme="sky"
           onClick={() => setActiveTab(activeTab === 'masuk_hari_ini' ? 'all' : 'masuk_hari_ini')}
@@ -243,7 +242,6 @@ export default function DashboardPage() {
         <MetricCard
           title="Service On Progres"
           value={stats.serviceOnProgress}
-          subtitle="Sedang Dikerjakan"
           icon={Wrench}
           colorScheme="amber"
           onClick={() => setActiveTab(activeTab === 'service_on_progress' ? 'all' : 'service_on_progress')}
@@ -254,7 +252,6 @@ export default function DashboardPage() {
         <MetricCard
           title="Barang di Vendor"
           value={stats.barangDiVendor}
-          subtitle="Dalam Proses Luar"
           icon={Truck}
           colorScheme="purple"
           onClick={() => setActiveTab(activeTab === 'barang_di_vendor' ? 'all' : 'barang_di_vendor')}
@@ -265,7 +262,6 @@ export default function DashboardPage() {
         <MetricCard
           title="Garansi Masuk"
           value={stats.garansiMasukMingguIni}
-          subtitle="Klaim Minggu Ini"
           icon={CalendarCheck}
           colorScheme="indigo"
           onClick={() => setActiveTab(activeTab === 'garansi_minggu_ini' ? 'all' : 'garansi_minggu_ini')}
@@ -276,7 +272,6 @@ export default function DashboardPage() {
         <MetricCard
           title="Garansi Blm Kirim"
           value={stats.garansiBelumDikirim}
-          subtitle="Menunggu Surat Jalan"
           icon={Clock}
           colorScheme="rose"
           onClick={() => setActiveTab(activeTab === 'garansi_belum_dikirim' ? 'all' : 'garansi_belum_dikirim')}
@@ -287,7 +282,6 @@ export default function DashboardPage() {
         <MetricCard
           title="Barang Blm Diambil"
           value={stats.barangBelumDiambil}
-          subtitle="Selesai Nunggu Pelanggan"
           icon={AlertCircle}
           colorScheme="emerald"
           onClick={() => setActiveTab(activeTab === 'barang_belum_diambil' ? 'all' : 'barang_belum_diambil')}
@@ -298,7 +292,6 @@ export default function DashboardPage() {
         <MetricCard
           title="Garansi Selesai"
           value={stats.garansiSelesai}
-          subtitle="Selesai & Diambil Cust"
           icon={ShieldCheck}
           colorScheme="teal"
           onClick={() => setActiveTab(activeTab === 'garansi_selesai' ? 'all' : 'garansi_selesai')}
@@ -309,7 +302,6 @@ export default function DashboardPage() {
         <MetricCard
           title="Service Selesai"
           value={stats.serviceSelesai}
-          subtitle="Selesai & Diambil Cust"
           icon={CheckCheck}
           colorScheme="blue"
           onClick={() => setActiveTab(activeTab === 'service_selesai' ? 'all' : 'service_selesai')}

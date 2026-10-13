@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Building2,
   PlusCircle,
-  Sparkles,
+  ClipboardList,
   MapPin,
   Phone,
   Users,
@@ -15,7 +15,8 @@ import {
   Smartphone,
   Pencil,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  FileSpreadsheet
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { MasterVendor, MasterKeluhan, Ticket } from '@/types';
@@ -52,6 +53,39 @@ function MasterDataContent() {
   const [alamatLengkap, setAlamatLengkap] = useState('');
   const [kontakWa, setKontakWa] = useState('');
   const [isSubmittingVendor, setIsSubmittingVendor] = useState(false);
+
+  // Vendor File Import (CSV / Excel)
+  const vendorFileInputRef = useRef<HTMLInputElement>(null);
+  const [isImportingVendor, setIsImportingVendor] = useState(false);
+  const [vendorImportMsg, setVendorImportMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleVendorFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImportingVendor(true);
+    setVendorImportMsg(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/master/vendors/import', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setVendorImportMsg({ type: 'error', text: data.error || 'Gagal mengimpor data vendor' });
+      } else {
+        setVendorImportMsg({ type: 'success', text: data.message || 'Berhasil mengimpor data vendor' });
+        fetchData();
+      }
+    } catch (err: unknown) {
+      setVendorImportMsg({ type: 'error', text: (err as Error).message || 'Terjadi kesalahan sistem saat upload' });
+    } finally {
+      setIsImportingVendor(false);
+      if (vendorFileInputRef.current) vendorFileInputRef.current.value = '';
+    }
+  };
 
   // Modal Edit Vendor
   const [isEditVendorModalOpen, setIsEditVendorModalOpen] = useState(false);
@@ -314,7 +348,7 @@ function MasterDataContent() {
                 : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
+            <ClipboardList className="w-4 h-4" />
             <span>Preset Form Option / Keluhan ({keluhanList.length})</span>
           </button>
         </div>
@@ -342,67 +376,134 @@ function MasterDataContent() {
               </h2>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsVendorModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>Tambah Vendor</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <input
+                ref={vendorFileInputRef}
+                type="file"
+                accept=".csv, .xlsx, .xls"
+                className="hidden"
+                onChange={handleVendorFileUpload}
+              />
+              <button
+                type="button"
+                onClick={() => vendorFileInputRef.current?.click()}
+                disabled={isImportingVendor}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all disabled:opacity-50"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>{isImportingVendor ? 'Mengimpor...' : 'Import CSV/Excel'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsVendorModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Tambah Vendor</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredVendors.map((v) => (
-              <div
-                key={v.id}
-                className="p-3.5 bg-slate-50 dark:bg-slate-800/70 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          {vendorImportMsg && (
+            <div
+              className={`p-3 rounded-xl text-xs flex items-center justify-between gap-2 ${
+                vendorImportMsg.type === 'success'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                  : 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+              }`}
+            >
+              <span>{vendorImportMsg.text}</span>
+              <button
+                type="button"
+                onClick={() => setVendorImportMsg(null)}
+                className="font-bold underline cursor-pointer text-[11px]"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-extrabold text-slate-900 dark:text-white text-sm leading-tight flex-1">
-                    {v.nama_vendor}
-                  </h3>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span
-                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
-                        v.wilayah === 'BDG'
-                          ? 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300'
-                          : v.wilayah === 'JKT'
-                          ? 'bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300'
-                          : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                      }`}
-                    >
-                      {v.wilayah}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditVendor(v)}
-                      title="Edit Vendor"
-                      className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 transition-colors"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenDeleteVendor(v)}
-                      title="Hapus Vendor"
-                      className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/60 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-                <p className="text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                  <span>{v.alamat_lengkap || 'Alamat belum diatur'}</span>
-                </p>
-                <p className="text-slate-700 dark:text-slate-300 font-mono font-semibold flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>{v.kontak_wa || '-'}</span>
-                </p>
+                Tutup
+              </button>
+            </div>
+          )}
+
+          {filteredVendors.length === 0 ? (
+            <div className="text-center py-12 px-4 border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50">
+              <Building2 className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                Belum Ada Data Distributor / Vendor
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                Database vendor saat ini kosong. Anda dapat menambahkan vendor secara manual atau mengunggah file spreadsheet CSV / Excel.
+              </p>
+              <div className="flex items-center justify-center gap-2.5 mt-4">
+                <button
+                  type="button"
+                  onClick={() => vendorFileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>Upload File CSV / Excel</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsVendorModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Tambah Manual</span>
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredVendors.map((v) => (
+                <div
+                  key={v.id}
+                  className="p-3.5 bg-slate-50 dark:bg-slate-800/70 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-extrabold text-slate-900 dark:text-white text-sm leading-tight flex-1">
+                      {v.nama_vendor}
+                    </h3>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span
+                        className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
+                          v.wilayah === 'BDG'
+                            ? 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300'
+                            : v.wilayah === 'JKT'
+                            ? 'bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {v.wilayah}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditVendor(v)}
+                        title="Edit Vendor"
+                        className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDeleteVendor(v)}
+                        title="Hapus Vendor"
+                        className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/60 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                    <span>{v.alamat_lengkap || 'Alamat belum diatur'}</span>
+                  </p>
+                  <p className="text-slate-700 dark:text-slate-300 font-mono font-semibold flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>{v.kontak_wa || '-'}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -450,7 +551,7 @@ function MasterDataContent() {
         <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Preset Form Option / Kamus Keluhan
               </h2>

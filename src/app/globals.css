@@ -144,6 +144,18 @@ body {
     overflow: hidden !important;
   }
 
+  /* Ensure crisp black borders and exact background fills when printing to PDF / paper */
+  .border-black,
+  [class*="border-black"] {
+    border-color: #000000 !important;
+  }
+
+  table, th, td {
+    border-color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   @page {
     margin: 8mm 12mm;
     size: A4 portrait;
