@@ -77,7 +77,7 @@ function MasterDataContent() {
         setVendorImportMsg({ type: 'error', text: data.error || 'Gagal mengimpor data vendor' });
       } else {
         setVendorImportMsg({ type: 'success', text: data.message || 'Berhasil mengimpor data vendor' });
-        fetchData();
+        fetchMasterData();
       }
     } catch (err: unknown) {
       setVendorImportMsg({ type: 'error', text: (err as Error).message || 'Terjadi kesalahan sistem saat upload' });

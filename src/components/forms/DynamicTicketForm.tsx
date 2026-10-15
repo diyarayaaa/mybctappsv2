@@ -418,8 +418,11 @@ export function DynamicTicketForm({
             </label>
             <input
               type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={noHp}
-              onChange={(e) => setNoHp(e.target.value)}
+              onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
+              placeholder="08xxxxxxxxxx"
               className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
             />
           </div>

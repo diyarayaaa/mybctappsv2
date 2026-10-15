@@ -103,7 +103,7 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
           </div>
 
           {/* Kolom Kanan */}
-          <div className="space-y-0.5">
+          <div className="space-y-0.5 pl-8 sm:pl-12">
             <div className="flex">
               <span className="w-28 text-black">Tanggal Masuk</span>
               <span className="mr-1">:</span>
@@ -122,19 +122,19 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
           </div>
         </div>
 
-        {/* 3. Tabel Data Perangkat */}
-        <div className="border border-black mb-2">
+        {/* 3. Tabel Data Perangkat & 4. Tanda Tangan, Biaya & Catatan */}
+        <div className="border border-black mb-2 overflow-hidden">
           <table className="w-full text-[10px] sm:text-[11px] border-collapse">
             <thead>
-              <tr className="bg-slate-200 font-bold border-b border-black text-black">
-                <th className="py-1 px-2 border-r border-black w-[28%] text-center uppercase">NAMA PERANGKAT</th>
-                <th className="py-1 px-2 border-r border-black w-[20%] text-center uppercase">SERIAL NUMBER</th>
-                <th className="py-1 px-2 border-r border-black w-[26%] text-center uppercase">KELENGKAPAN</th>
-                <th className="py-1 px-2 w-[26%] text-center uppercase">KELUHAN</th>
+              <tr className="bg-slate-200 font-bold text-black">
+                <th className="py-1 px-2 border-r border-b border-black w-[28%] text-center uppercase">NAMA PERANGKAT</th>
+                <th className="py-1 px-2 border-r border-b border-black w-[20%] text-center uppercase">SERIAL NUMBER</th>
+                <th className="py-1 px-2 border-r border-b border-black w-[26%] text-center uppercase">KELENGKAPAN</th>
+                <th className="py-1 px-2 border-b border-black w-[26%] text-center uppercase">KELUHAN</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-black text-black">
+              <tr className="text-black">
                 <td className="py-3 px-2 border-r border-black uppercase text-center font-semibold">
                   {ticket.nama_barang}
                 </td>
@@ -152,7 +152,7 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
           </table>
 
           {/* 4. Bagian Tanda Tangan, Biaya & Catatan */}
-          <div className="grid grid-cols-12 text-[10px] sm:text-[11px]">
+          <div className="grid grid-cols-12 text-[10px] sm:text-[11px] border-t border-black">
             {/* Kolom Tanda Tangan (Menerima, Menyerahkan, Mengambil) */}
             <div className="col-span-5 border-r border-black p-2 flex flex-col justify-between min-h-[85px]">
               <div className="grid grid-cols-3 text-center text-[10px]">
@@ -173,17 +173,26 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
                 BIAYA
               </div>
               <div className="p-1.5 space-y-0.5 text-[10px] sm:text-[11px] flex-1">
-                <div className="flex justify-between">
-                  <span>Estimasi Biaya</span>
-                  <span>: {Number(ticket.estimasi_biaya || 0) > 0 ? `Rp${Number(ticket.estimasi_biaya).toLocaleString('id-ID')}` : ''}</span>
+                <div className="flex items-center">
+                  <span className="w-20 sm:w-22 shrink-0 text-black">Estimasi Biaya</span>
+                  <span className="mr-1">:</span>
+                  <span className="text-black">
+                    {Number(ticket.estimasi_biaya || 0) > 0 ? `Rp${Number(ticket.estimasi_biaya).toLocaleString('id-ID')}` : '-'}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span>DP</span>
-                  <span>: {Number(ticket.dp || 0) > 0 ? `Rp${Number(ticket.dp).toLocaleString('id-ID')}` : ''}</span>
+                <div className="flex items-center">
+                  <span className="w-20 sm:w-22 shrink-0 text-black">DP</span>
+                  <span className="mr-1">:</span>
+                  <span className="text-black">
+                    {Number(ticket.dp || 0) > 0 ? `Rp${Number(ticket.dp).toLocaleString('id-ID')}` : '-'}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Sisa</span>
-                  <span>: Rp{Number(ticket.sisa || 0).toLocaleString('id-ID')}</span>
+                <div className="flex items-center font-semibold">
+                  <span className="w-20 sm:w-22 shrink-0 text-black">Sisa</span>
+                  <span className="mr-1">:</span>
+                  <span className="text-black">
+                    Rp{Number(ticket.sisa || 0).toLocaleString('id-ID')}
+                  </span>
                 </div>
               </div>
             </div>
@@ -201,7 +210,7 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
         </div>
 
         {/* 5. Catatan Syarat & Ketentuan + Teknisi */}
-        <div className="grid grid-cols-12 border border-black">
+        <div className="grid grid-cols-12 border border-black overflow-hidden">
           <div className="col-span-9 p-1.5 text-[9px] sm:text-[10px] space-y-0.5 leading-snug">
             <p className="font-bold uppercase text-[9px] sm:text-[10px]">CATATAN :</p>
             <p>• Pantau status pengerjaan secara online di website/portal tracking menggunakan No. Tanda Terima di atas.</p>
@@ -224,7 +233,7 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
       <div className="my-2.5 border-t border-dashed border-black w-full" />
 
       {/* 7. Slip Kupon Toko Bagian Bawah (Kotak Border Keliling Penuh 4 Sisi) */}
-      <div className="border-[1.5px] border-black p-2.5 text-[10px] grid grid-cols-3 gap-2 bg-white">
+      <div className="border border-black p-2.5 text-[10px] grid grid-cols-3 gap-2 bg-white">
         <div className="space-y-0.5">
           <div className="flex">
             <span className="w-16">No RMA</span>

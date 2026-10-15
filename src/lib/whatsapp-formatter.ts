@@ -203,14 +203,9 @@ export function formatOperationalReport(tickets: Ticket[], dateString?: string):
   text += barangDiVendorJkt.length === 0 ? '(Tidak ada unit di vendor Jakarta)\n\n' : groupSection(barangDiVendorJkt);
   text += SEP;
   text += `*GARANSIAN BELUM DIPROSES / BELUM DIKIRIM*\n\n`;
-  if (garansiBelumDiproses.length === 0) {
-    text += '(Semua unit garansi telah terproses/terkirim)\n\n';
-  } else {
-    garansiBelumDiproses.forEach((t, idx) => {
-      text += `${idx + 1}. [${t.nomor_layanan}] ${t.nama_barang} (Masuk: ${formatDateIndo(t.tanggal_masuk)}) - ${t.keluhan} [${userTag(t.nama_customer)}] (Teknisi: ${t.teknisi})\n`;
-    });
-    text += `\n`;
-  }
+  text += garansiBelumDiproses.length === 0
+    ? '(Semua unit garansi telah terproses/terkirim)\n\n'
+    : groupSection(garansiBelumDiproses);
   text += `Best Computel Operasional & Logistics`;
 
   return text;
@@ -304,6 +299,28 @@ export function formatSalesReport(tickets: Ticket[], dateString?: string): strin
     return out;
   }
 
+  function groupBelumDiproses(items: Ticket[]): string {
+    const map = new Map<string, Ticket[]>();
+    for (const t of items) {
+      const v = cleanVendorName(t.distributor_vendor || 'LAINNYA');
+      if (!map.has(v)) map.set(v, []);
+      map.get(v)!.push(t);
+    }
+    let out = '';
+    Array.from(map.keys()).sort().forEach((v) => {
+      out += `*${v.toUpperCase()}*\n`;
+      map.get(v)!.forEach((t) => {
+        out += `${String(t.nama_barang || '-').toUpperCase()}\n`;
+        out += `├─ S/N: ${t.serial_number || '-'}\n`;
+        out += `├─ Keluhan: ${t.keluhan || '-'}\n`;
+        out += `├─ User: ${(t.nama_customer || '').toUpperCase() === 'STOCK BCT' ? 'Stok' : (t.nama_customer || '-')}\n`;
+        out += `└─ Catt: ${t.catatan || '-'}\n`;
+      });
+      out += `\n`;
+    });
+    return out;
+  }
+
   const SEP = '--------------------------------------------------\n--------------------------------------------------\n';
 
   let text = '';
@@ -317,14 +334,9 @@ export function formatSalesReport(tickets: Ticket[], dateString?: string): strin
   text += diVendorJkt.length === 0 ? '(Kosong)\n\n' : groupVendor(diVendorJkt);
   text += SEP;
   text += `*GARANSIAN BELUM DIPROSES (STOK BCT/GHITP)*\n\n`;
-  if (belumDiproses.length === 0) {
-    text += '(Semua stok garansi telah diproses)\n\n';
-  } else {
-    belumDiproses.forEach((t, idx) => {
-      text += `${idx + 1}. [${t.nama_customer}] *${t.nama_barang}* (SN: ${t.serial_number}) - ${t.keluhan}\n`;
-    });
-    text += `\n`;
-  }
+  text += belumDiproses.length === 0
+    ? '(Semua stok garansi telah diproses)\n\n'
+    : groupBelumDiproses(belumDiproses);
   text += `Best Computel RMA & Stock Division`;
 
   return text;
