@@ -19,7 +19,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Truck,
-  Plus
+  Plus,
+  X
 } from 'lucide-react';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -54,6 +55,10 @@ const PAGE_META_MAP: Record<string, PageMeta> = {
     title: 'Data Master & Pengaturan',
     subtitle: 'Kelola database vendor, customer, dan preset opsi servis'
   },
+  '/alamat': {
+    title: 'Cetak Alamat Vendor',
+    subtitle: 'Label stiker pengiriman barang garansi & servis ke distributor/vendor'
+  },
   '/logs': {
     title: 'Audit Log Trail',
     subtitle: 'Riwayat lengkap aktivitas dan perubahan status sistem'
@@ -72,10 +77,33 @@ function TopbarContent() {
   const { toggleMobileSidebar, theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const urlSearch = searchParams ? searchParams.get('search') || '' : '';
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; title: string; time: string; type: string }[]>([]);
+
+  // Synchronize Topbar search input when URL search query changes
+  useEffect(() => {
+    setSearchQuery(urlSearch);
+  }, [urlSearch]);
+
+  // Live debounced search when user is already on /tickets page
+  useEffect(() => {
+    if (pathname !== '/tickets') return;
+    if (searchQuery.trim() === urlSearch) return;
+
+    const timer = setTimeout(() => {
+      const q = searchQuery.trim();
+      if (q) {
+        router.push(`/tickets?search=${encodeURIComponent(q)}`);
+      } else if (urlSearch) {
+        router.push('/tickets');
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, pathname, urlSearch, router]);
 
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
@@ -178,8 +206,11 @@ function TopbarContent() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/tickets?search=${encodeURIComponent(searchQuery.trim())}`);
+    const q = searchQuery.trim();
+    if (q) {
+      router.push(`/tickets?search=${encodeURIComponent(q)}`);
+    } else {
+      router.push('/tickets');
     }
   };
 
@@ -187,7 +218,7 @@ function TopbarContent() {
   const userInitials = (currentUserName.slice(0, 2) || 'AD').toUpperCase();
 
   return (
-    <header className="topbar-container bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 sticky top-0 z-30 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4 transition-colors duration-200">
+    <header className="topbar-container bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 sticky top-0 z-30 px-4 sm:px-6 h-20 shrink-0 flex items-center justify-between gap-4 transition-colors duration-200">
       {/* Left: Hamburger (Mobile) + Page Title & Subtitle */}
       <div className="flex items-center gap-3 sm:gap-4 min-w-0">
         {/* Mobile Sidebar Hamburger Toggle */}
@@ -221,8 +252,24 @@ function TopbarContent() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-1.5 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700/80 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden transition-all"
+              placeholder="Cari no. tiket, nama, barang, serial..."
+              className="w-full pl-9 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700/80 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden transition-all placeholder:text-slate-400"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  if (pathname === '/tickets') {
+                    router.push('/tickets');
+                  }
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                title="Hapus pencarian"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </form>
 

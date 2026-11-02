@@ -4,9 +4,11 @@ import os from "os";
 function getLocalDevOrigins(): string[] {
   const origins = new Set<string>([
     "localhost",
+    "localhost:2525",
     "localhost:3005",
     "localhost:3000",
     "127.0.0.1",
+    "127.0.0.1:2525",
     "127.0.0.1:3005",
     "127.0.0.1:3000",
     "192.168.1.17",
@@ -25,6 +27,7 @@ function getLocalDevOrigins(): string[] {
       for (const iface of ifaceList) {
         if (iface.family === "IPv4" || (iface.family as unknown) === 4) {
           origins.add(iface.address);
+          origins.add(`${iface.address}:2525`);
           origins.add(`${iface.address}:3005`);
           origins.add(`${iface.address}:3000`);
         }

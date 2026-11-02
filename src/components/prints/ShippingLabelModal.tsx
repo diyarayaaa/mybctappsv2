@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { MasterVendor, Ticket } from '@/types';
 import { COMPANY_INFO } from '@/lib/constants';
-import { Printer, Box, Truck, Edit3, Building2, MapPin, Phone } from 'lucide-react';
+import { Printer, Edit3, Building2, Eye, SlidersHorizontal, Check } from 'lucide-react';
 
 interface ShippingLabelModalProps {
   isOpen: boolean;
@@ -23,15 +23,17 @@ export function ShippingLabelModal({
 }: ShippingLabelModalProps) {
   const [vendors, setVendors] = useState<MasterVendor[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState<string>('');
-  
+
   // Editable fields for label
   const [namaPenerima, setNamaPenerima] = useState('');
-  const [wilayah, setWilayah] = useState<'BDG' | 'JKT' | 'OTHER' | string>('JKT');
+  const [headerTitle, setHeaderTitle] = useState('');
+  const [wilayah, setWilayah] = useState<string>('BDG');
   const [alamatLengkap, setAlamatLengkap] = useState('');
   const [kontakWa, setKontakWa] = useState('');
-  const [customIsiPaket, setCustomIsiPaket] = useState('');
-  const [ekspedisi, setEkspedisi] = useState('J&T / JNE / Travel');
   const [isEditingCustom, setIsEditingCustom] = useState(false);
+
+  // Size option: 'small' (Ukuran Kecil), 'large' (Ukuran Besar), 'both' (Keduanya di 1 lembar A4)
+  const [labelSize, setLabelSize] = useState<'small' | 'large' | 'both'>('small');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -45,35 +47,43 @@ export function ShippingLabelModal({
         // Match initial vendorName if provided
         if (vendorName) {
           const found = list.find(
-            (v) => v.nama_vendor.toLowerCase() === vendorName.toLowerCase() ||
-                   vendorName.toLowerCase().includes(v.nama_vendor.toLowerCase()) ||
-                   v.nama_vendor.toLowerCase().includes(vendorName.toLowerCase())
+            (v) =>
+              v.nama_vendor.toLowerCase() === vendorName.toLowerCase() ||
+              vendorName.toLowerCase().includes(v.nama_vendor.toLowerCase()) ||
+              v.nama_vendor.toLowerCase().includes(vendorName.toLowerCase())
           );
           if (found) {
             setSelectedVendorId(String(found.id));
-            setNamaPenerima(found.nama_vendor);
-            setWilayah(found.wilayah || 'JKT');
-            setAlamatLengkap(found.alamat_lengkap || '');
-            setKontakWa(found.kontak_wa || '-');
+            applyVendor(found);
           } else {
             setSelectedVendorId('custom');
+            setHeaderTitle(vendorName.toUpperCase());
             setNamaPenerima(vendorName);
-            setWilayah(vendorName.toUpperCase().includes('BDG') ? 'BDG' : 'JKT');
-            setAlamatLengkap('Alamat vendor tujuan');
+            setWilayah('OTHER');
+            setAlamatLengkap('Alamat vendor / penerima tujuan');
             setKontakWa('-');
           }
         } else if (list.length > 0) {
-          // Default to first vendor
+          // Default to first vendor (e.g. Q-CHOX or first in list)
           const first = list[0];
           setSelectedVendorId(String(first.id));
-          setNamaPenerima(first.nama_vendor);
-          setWilayah(first.wilayah || 'JKT');
-          setAlamatLengkap(first.alamat_lengkap || '');
-          setKontakWa(first.kontak_wa || '-');
+          applyVendor(first);
         }
       })
       .catch((err) => console.error('Failed to load vendors:', err));
   }, [isOpen, vendorName]);
+
+  const applyVendor = (v: MasterVendor) => {
+    // Generate clean header name (short or full name)
+    const shortName = v.nama_vendor
+      .replace(/^(PT\.|CV\.|TOKO|SERVICE CENTER)\s+/i, '')
+      .trim();
+    setHeaderTitle(shortName || v.nama_vendor);
+    setNamaPenerima(v.nama_vendor);
+    setWilayah(v.wilayah || 'BDG');
+    setAlamatLengkap(v.alamat_lengkap || '');
+    setKontakWa(v.kontak_wa || '-');
+  };
 
   const handleVendorSelect = (vId: string) => {
     setSelectedVendorId(vId);
@@ -83,10 +93,7 @@ export function ShippingLabelModal({
     }
     const found = vendors.find((v) => String(v.id) === vId);
     if (found) {
-      setNamaPenerima(found.nama_vendor);
-      setWilayah(found.wilayah || 'JKT');
-      setAlamatLengkap(found.alamat_lengkap || '');
-      setKontakWa(found.kontak_wa || '-');
+      applyVendor(found);
     }
   };
 
@@ -100,216 +107,330 @@ export function ShippingLabelModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Cetak Label Alamat Pengiriman (Stiker Paket)"
-      subtitle="Pilih vendor dari Master Data atau ketik alamat tujuan secara fleksibel"
-      maxWidth="3xl"
+      title="Cetak Label Alamat Pengiriman Vendor"
+      subtitle="Format stiker pengiriman modern & rapi dengan data dari Master Vendor"
+      maxWidth="4xl"
     >
-      <div className="space-y-5">
-        {/* Controls Bar (No Print) */}
-        <div className="no-print bg-slate-50 dark:bg-slate-800/80 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="space-y-6">
+        {/* Controls Toolbar (Hidden on Print) */}
+        <div className="no-print bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            {/* Vendor Dropdown */}
             <div className="flex-1">
-              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                Pilih Distributor / Vendor Tujuan:
+              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-blue-500" />
+                <span>Pilih Alamat Vendor (Dari Master Data):</span>
               </label>
               <select
                 value={selectedVendorId}
                 onChange={(e) => handleVendorSelect(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-hidden"
+                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-hidden transition-all cursor-pointer shadow-2xs"
               >
-                <option value="custom">-- ✍️ Input Manual / Alamat Kustom --</option>
+                <option value="">-- Pilih Alamat Vendor --</option>
                 {vendors.map((v) => (
                   <option key={v.id} value={String(v.id)}>
                     [{v.wilayah}] {v.nama_vendor}
                   </option>
                 ))}
+                <option value="custom">-- ✍️ Input Manual / Alamat Baru --</option>
               </select>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsEditingCustom(!isEditingCustom)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>{isEditingCustom ? 'Sembunyikan Edit' : 'Edit Teks Label'}</span>
-            </button>
+            {/* Size Selector Segments */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Pilih Ukuran Cetak:
+              </label>
+              <div className="inline-flex items-center p-1 bg-slate-200/80 dark:bg-slate-700 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setLabelSize('small')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    labelSize === 'small'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  }`}
+                >
+                  Ukuran Kecil
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLabelSize('large')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    labelSize === 'large'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  }`}
+                >
+                  Ukuran Besar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLabelSize('both')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    labelSize === 'both'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  }`}
+                >
+                  Keduanya (A4)
+                </button>
+              </div>
+            </div>
+
+            {/* Toggle Edit Fields */}
+            <div className="self-end md:self-auto">
+              <button
+                type="button"
+                onClick={() => setIsEditingCustom(!isEditingCustom)}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold rounded-xl border transition-all ${
+                  isEditingCustom
+                    ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                    : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{isEditingCustom ? 'Sembunyikan Edit' : 'Edit Teks Langsung'}</span>
+              </button>
+            </div>
           </div>
 
-          {/* Quick Custom Inputs if editing */}
+          {/* Quick Custom Inputs (if user wants to customize before print) */}
           {isEditingCustom && (
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs animate-in fade-in duration-150">
               <div>
-                <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">Nama Penerima / Vendor</label>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Judul Header Bar (Nama Singkat Vendor)
+                </label>
+                <input
+                  type="text"
+                  value={headerTitle}
+                  onChange={(e) => setHeaderTitle(e.target.value)}
+                  placeholder="Contoh: Q CHOCK / ASUS BANDUNG"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Nama Penerima (Lengkap / Toko)
+                </label>
                 <input
                   type="text"
                   value={namaPenerima}
                   onChange={(e) => setNamaPenerima(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">Wilayah / Ekspedisi</label>
-                <input
-                  type="text"
-                  value={ekspedisi}
-                  onChange={(e) => setEkspedisi(e.target.value)}
-                  placeholder="Ekspedisi / Travel"
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                  placeholder="Contoh: Q-CHOX COMPUTER"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">Alamat Lengkap Tujuan</label>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Alamat Lengkap & Patokan
+                </label>
                 <textarea
                   rows={2}
                   value={alamatLengkap}
                   onChange={(e) => setAlamatLengkap(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                  placeholder="Jalan, No, Desa, Kecamatan, Kota / Patokan Alun-alun"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white leading-relaxed"
                 />
               </div>
 
-              <div>
-                <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">UP / PIC & No. Telepon</label>
+              <div className="sm:col-span-2">
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  UP (PIC) & No. Telepon / WA
+                </label>
                 <input
                   type="text"
                   value={kontakWa}
                   onChange={(e) => setKontakWa(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">Catatan Isi Paket (Opsional)</label>
-                <input
-                  type="text"
-                  value={customIsiPaket}
-                  onChange={(e) => setCustomIsiPaket(e.target.value)}
-                  placeholder="Contoh: 1 Unit Laptop Asus + Charger"
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                  placeholder="Contoh: UP ANDI Q CHOCK (0821-2222-7280)"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                 />
               </div>
             </div>
           )}
         </div>
 
-        {/* Printable Label Box */}
-        <div
-          id="shipping-label-area"
-          className="printable-area bg-white p-6 rounded-2xl border-2 border-dashed border-slate-900 text-slate-900 text-sm shadow-sm space-y-4"
-        >
-          {/* Header Label */}
-          <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-slate-900 text-white rounded-lg">
-                <Box className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-black tracking-tight uppercase">
-                  LABEL PENGIRIMAN PAKET RMA & SERVIS
-                </h3>
-                <p className="text-xs font-semibold text-slate-600">FRAGILE / HATI-HATI BARANG ELEKTRONIK</p>
-              </div>
-            </div>
+        {/* Printable Area - Modernized Address Sticker Layout */}
+        <div id="shipping-label-printable" className="printable-area space-y-8">
+          {/* Label Ukuran Kecil */}
+          {(labelSize === 'small' || labelSize === 'both') && (
+            <div className="flex flex-col items-center">
+              <span className="no-print text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                ── UKURAN KECIL ──
+              </span>
 
-            <div className="text-right">
-              {noSuratJalan ? (
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block">No. Surat Jalan</span>
-                  <span className="font-mono font-bold text-sm bg-slate-100 px-2 py-0.5 rounded border border-slate-300">
-                    {noSuratJalan}
-                  </span>
+              <div
+                className="w-full max-w-[420px] bg-white rounded-lg border-2 border-red-600 overflow-hidden shadow-md text-slate-900 font-sans"
+                style={{
+                  WebkitPrintColorAdjust: 'exact',
+                  printColorAdjust: 'exact'
+                }}
+              >
+                {/* Red Header Bar */}
+                <div
+                  className="bg-red-600 text-white font-black text-center text-sm sm:text-base py-1.5 px-3 tracking-widest uppercase"
+                  style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                >
+                  {headerTitle || namaPenerima || 'ALAMAT PENERIMA'}
                 </div>
-              ) : (
-                <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Pengiriman</span>
-                  <span className="font-bold text-xs bg-slate-100 px-2 py-0.5 rounded border border-slate-300">
-                    {ekspedisi}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* Grid Pengirim vs Penerima */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Pengirim */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-300">
-              <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1">
-                PENGIRIM (FROM):
-              </p>
-              <p className="font-bold text-slate-900">{COMPANY_INFO.name}</p>
-              <p className="text-xs font-semibold text-blue-600">{COMPANY_INFO.subName}</p>
-              <p className="text-xs text-slate-600 mt-1">{COMPANY_INFO.address}</p>
-              <p className="text-xs text-slate-800 font-mono mt-1">Telp/WA: {COMPANY_INFO.phone}</p>
-            </div>
+                {/* Body Content */}
+                <div className="p-4 sm:p-5 space-y-3.5 text-xs sm:text-sm">
+                  {/* Penerima */}
+                  <div>
+                    <div className="font-black text-slate-900">
+                      Penerima :{' '}
+                      <span className="font-black text-slate-900 uppercase">
+                        {namaPenerima || 'NAMA VENDOR'}
+                      </span>
+                    </div>
 
-            {/* Penerima */}
-            <div className="p-3 bg-amber-50/60 rounded-xl border-2 border-amber-400">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-900">
-                  PENERIMA (TO):
-                </p>
-                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-200 text-amber-900 border border-amber-400 uppercase">
-                  {wilayah || 'VENDOR'}
-                </span>
-              </div>
-              <p className="font-extrabold text-base text-slate-900">{namaPenerima || 'Distributor / Vendor'}</p>
-              <p className="text-xs text-slate-700 mt-1 whitespace-pre-line font-medium leading-relaxed">
-                {alamatLengkap || 'Alamat vendor tujuan'}
-              </p>
-              <p className="text-xs text-slate-900 font-mono font-bold mt-2 pt-1 border-t border-amber-200">
-                UP / Kontak: {kontakWa || '-'}
-              </p>
-            </div>
-          </div>
+                    <div className="mt-1 pl-4 text-slate-800 font-medium whitespace-pre-line leading-relaxed text-[11px] sm:text-xs">
+                      {alamatLengkap || 'Alamat vendor tujuan belum diatur di Master Vendor'}
+                    </div>
 
-          {/* Isi Paket Ringkas (Jika ada tiket dari Surat Jalan atau Custom Input) */}
-          {tickets.length > 0 ? (
-            <div className="pt-2 border-t border-slate-200 text-xs">
-              <p className="font-bold text-slate-700 mb-1">Isi Paket ({tickets.length} Unit Perangkat):</p>
-              <div className="space-y-1 bg-slate-50 p-2.5 rounded-lg border border-slate-200 font-mono text-[11px]">
-                {tickets.map((t, idx) => (
-                  <div key={idx} className="flex justify-between text-slate-700">
-                    <span>
-                      {idx + 1}. {t.nama_barang} (SN: {t.serial_number})
-                    </span>
-                    <span className="text-slate-500 font-sans">[{t.nomor_layanan}]</span>
+                    <div className="mt-1 pl-4 font-bold text-slate-900 text-[11px] sm:text-xs">
+                      {kontakWa ? (kontakWa.toUpperCase().startsWith('UP') ? kontakWa : `UP ${kontakWa}`) : '-'}
+                    </div>
                   </div>
-                ))}
+
+                  {/* Clean Divider */}
+                  <div className="border-t border-slate-300 my-2" />
+
+                  {/* Pengirim */}
+                  <div>
+                    <div className="font-black text-slate-900">
+                      Pengirim :{' '}
+                      <span className="font-bold text-slate-900">
+                        {COMPANY_INFO.name}
+                      </span>
+                    </div>
+
+                    <div className="mt-0.5 pl-4 text-slate-800 font-bold font-mono text-[11px] sm:text-xs">
+                      ({COMPANY_INFO.phone})
+                    </div>
+                    <div className="pl-4 text-slate-500 text-[10px] sm:text-[11px]">
+                      {COMPANY_INFO.address}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Red Warning Footer Bar */}
+                <div
+                  className="bg-red-600 text-white font-black text-center text-[11px] sm:text-xs py-1.5 px-3 tracking-wider uppercase"
+                  style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                >
+                  HATI HATI BARANG MUDAH PECAH !!!
+                </div>
               </div>
             </div>
-          ) : customIsiPaket ? (
-            <div className="pt-2 border-t border-slate-200 text-xs">
-              <p className="font-bold text-slate-700 mb-1">Deskripsi Paket:</p>
-              <p className="bg-slate-50 p-2 rounded-lg border border-slate-200 font-medium text-slate-800">
-                {customIsiPaket}
-              </p>
+          )}
+
+          {/* Label Ukuran Besar */}
+          {(labelSize === 'large' || labelSize === 'both') && (
+            <div className="flex flex-col items-center">
+              <span className="no-print text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                ── UKURAN BESAR ──
+              </span>
+
+              <div
+                className="w-full max-w-[560px] bg-white rounded-xl border-4 border-red-600 overflow-hidden shadow-lg text-slate-900 font-sans"
+                style={{
+                  WebkitPrintColorAdjust: 'exact',
+                  printColorAdjust: 'exact'
+                }}
+              >
+                {/* Red Header Bar */}
+                <div
+                  className="bg-red-600 text-white font-black text-center text-lg sm:text-xl py-2.5 px-4 tracking-widest uppercase"
+                  style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                >
+                  {headerTitle || namaPenerima || 'ALAMAT PENERIMA'}
+                </div>
+
+                {/* Body Content */}
+                <div className="p-5 sm:p-7 space-y-5 text-sm sm:text-base">
+                  {/* Penerima */}
+                  <div>
+                    <div className="font-black text-base sm:text-lg text-slate-900">
+                      Penerima :{' '}
+                      <span className="font-black text-slate-900 uppercase">
+                        {namaPenerima || 'NAMA VENDOR'}
+                      </span>
+                    </div>
+
+                    <div className="mt-1.5 pl-5 text-slate-800 font-medium whitespace-pre-line leading-relaxed text-xs sm:text-sm">
+                      {alamatLengkap || 'Alamat vendor tujuan belum diatur di Master Vendor'}
+                    </div>
+
+                    <div className="mt-1.5 pl-5 font-bold text-slate-900 text-xs sm:text-sm">
+                      {kontakWa ? (kontakWa.toUpperCase().startsWith('UP') ? kontakWa : `UP ${kontakWa}`) : '-'}
+                    </div>
+                  </div>
+
+                  {/* Clean Divider */}
+                  <div className="border-t-2 border-slate-300 my-3" />
+
+                  {/* Pengirim */}
+                  <div>
+                    <div className="font-black text-sm sm:text-base text-slate-900">
+                      Pengirim :{' '}
+                      <span className="font-extrabold text-slate-900">
+                        {COMPANY_INFO.name}
+                      </span>
+                    </div>
+
+                    <div className="mt-1 pl-5 text-slate-800 font-bold font-mono text-xs sm:text-sm">
+                      ({COMPANY_INFO.phone})
+                    </div>
+                    <div className="pl-5 text-slate-500 text-xs mt-0.5">
+                      {COMPANY_INFO.address}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Red Warning Footer Bar */}
+                <div
+                  className="bg-red-600 text-white font-black text-center text-xs sm:text-sm py-2 px-4 tracking-widest uppercase"
+                  style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                >
+                  HATI HATI BARANG MUDAH PECAH !!!
+                </div>
+              </div>
             </div>
-          ) : null}
+          )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="no-print flex items-center justify-end gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
-          >
-            Tutup
-          </button>
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-500 hover:bg-blue-600 active:scale-95 shadow-md shadow-blue-500/20 rounded-xl transition-all"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Cetak Label Alamat (Stiker)</span>
-          </button>
+        {/* Footer Actions (No Print) */}
+        <div className="no-print flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-4">
+          <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
+            Tip: Format stiker siap tempel di kardus/paket pengiriman barang garansi & servis.
+          </p>
+
+          <div className="flex items-center gap-3 ml-auto">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+            >
+              Tutup
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:scale-95 shadow-md shadow-red-600/20 rounded-xl transition-all cursor-pointer"
+            >
+              <Printer className="w-4 h-4" />
+              <span>
+                Cetak Stiker {labelSize === 'small' ? '(Kecil)' : labelSize === 'large' ? '(Besar)' : '(Keduanya)'}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </Modal>
   );
 }
-

@@ -19,7 +19,10 @@ import {
   RefreshCw,
   KeyRound,
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  BarChart3,
+  FileText,
+  Truck
 } from 'lucide-react';
 
 function GoogleIcon({ className = 'w-5 h-5' }: { className?: string }) {
@@ -218,64 +221,52 @@ function LoginForm() {
           <circle cx="500" cy="100" r="380" fill="none" stroke="white" strokeWidth="1" opacity="0.1" />
         </svg>
 
-        {/* Top Branding / Logo */}
-        <div className="relative z-10 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg shadow-black/10">
-              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 sm:w-7 sm:h-7 text-white">
-                <line x1="50" y1="14" x2="50" y2="86" stroke="currentColor" strokeWidth="10" strokeLinecap="round" />
-                <line x1="14" y1="50" x2="86" y2="50" stroke="currentColor" strokeWidth="10" strokeLinecap="round" />
-                <line x1="24" y1="24" x2="76" y2="76" stroke="currentColor" strokeWidth="10" strokeLinecap="round" />
-                <line x1="24" y1="76" x2="76" y2="24" stroke="currentColor" strokeWidth="10" strokeLinecap="round" />
-              </svg>
-            </div>
-            <span className="font-extrabold text-base sm:text-lg tracking-wider text-white uppercase drop-shadow-xs">
-              BEST COMPUTEL
-            </span>
-          </div>
-
-          <div className="lg:hidden">
-            <ThemeToggle className="bg-white/10 border-white/20 text-white" />
-          </div>
+        {/* Top: Mobile Theme Toggle */}
+        <div className="relative z-10 flex items-center justify-end lg:hidden">
+          <ThemeToggle className="bg-white/10 border-white/20 text-white" />
         </div>
 
-        {/* Central Hero Message */}
-        <div className="relative z-10 my-auto py-8 sm:py-12 max-w-lg">
-          <div className="hidden lg:block mb-8">
-            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-14 h-14 text-white drop-shadow-md">
-              <line x1="50" y1="12" x2="50" y2="88" stroke="currentColor" strokeWidth="11" strokeLinecap="round" />
-              <line x1="12" y1="50" x2="88" y2="50" stroke="currentColor" strokeWidth="11" strokeLinecap="round" />
-              <line x1="23" y1="23" x2="77" y2="77" stroke="currentColor" strokeWidth="11" strokeLinecap="round" />
-              <line x1="23" y1="77" x2="77" y2="23" stroke="currentColor" strokeWidth="11" strokeLinecap="round" />
-            </svg>
+        {/* Central Hero Block: Logo, Judul, Penjelasan (Justify), & Fitur di Tengah */}
+        <div className="relative z-10 my-auto py-8 sm:py-12 max-w-3xl space-y-6 sm:space-y-7">
+          {/* Logo & Judul Berdampingan */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 sm:gap-8 lg:gap-10">
+            <img
+              src="/logo.png"
+              alt="Logo Best Computel"
+              className="w-28 h-28 sm:w-36 sm:h-36 lg:w-44 lg:h-44 shrink-0 object-contain drop-shadow-2xl"
+            />
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-white leading-[1.08]">
+              Best Computel <br />
+              <span className="text-blue-200">RMA & Service</span>
+            </h1>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
-            Best Computel <br />
-            <span className="text-blue-200">RMA & Service</span>
-          </h1>
-
-          <p className="mt-4 sm:mt-6 text-sm sm:text-base text-blue-100/90 leading-relaxed font-normal">
+          {/* Penjelasan Teks Justify */}
+          <p className="text-base sm:text-lg lg:text-xl text-blue-100/90 leading-relaxed font-normal text-justify">
             Sistem terintegrasi servis dan garansi. Masuk dengan akun kredensial terdaftar atau gunakan autentikasi kode OTP yang dikirim ke Gmail Anda.
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-white/80">
-            <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/15 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              Autentikasi OTP Gmail
+          {/* Fitur Pills */}
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs sm:text-sm font-semibold text-white/95">
+            <span className="px-3.5 sm:px-4 py-2 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/20 flex items-center gap-2 shadow-xs">
+              <BarChart3 className="w-4 h-4 text-blue-200" />
+              Dashboard Statistik
             </span>
-            <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/15">
-              Admin User Management
+            <span className="px-3.5 sm:px-4 py-2 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/20 flex items-center gap-2 shadow-xs">
+              <FileText className="w-4 h-4 text-emerald-300" />
+              Laporan RMA & Service
             </span>
-            <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/15">
-              Keamanan Terverifikasi
+            <span className="px-3.5 sm:px-4 py-2 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/20 flex items-center gap-2 shadow-xs">
+              <Truck className="w-4 h-4 text-amber-300" />
+              Management Pengiriman Vendor
             </span>
           </div>
         </div>
 
-        {/* Bottom Footer Note */}
-        <div className="relative z-10 pt-4 text-xs text-blue-200/70 font-medium">
-          © 2026 Best Computel. All rights reserved.
+        {/* Bottom Footer Note (Tetap di Bawah) */}
+        <div className="relative z-10 pt-4 text-xs sm:text-sm text-blue-200/80 font-medium">
+          2026 Best Computel RMA & Service. All right reserved.
         </div>
       </div>
 
@@ -284,15 +275,7 @@ function LoginForm() {
           ======================================================== */}
       <div className="w-full lg:w-1/2 flex flex-col justify-between p-6 sm:p-12 lg:p-16 bg-white dark:bg-slate-900 transition-colors duration-200 overflow-y-auto">
         {/* Top Header inside Form side */}
-        <div className="hidden lg:flex items-center justify-between pb-6">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
-              Best Computel
-            </span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-600 text-white tracking-wider">
-              RMA
-            </span>
-          </div>
+        <div className="hidden lg:flex items-center justify-end pb-6">
           <ThemeToggle />
         </div>
 
@@ -467,7 +450,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3.5 bg-[#18181b] hover:bg-[#27272a] active:bg-[#09090b] text-white font-bold text-sm rounded-xl shadow-md shadow-black/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active:scale-[0.99]"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active:scale-[0.99]"
               >
                 {isLoading ? (
                   <span className="animate-pulse">Memproses Masuk...</span>

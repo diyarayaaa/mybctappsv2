@@ -112,10 +112,10 @@ export const SALES_WA_NUMBER = '6282120081484';
 export const SALES_WA_DISPLAY = '0821-2008-1484';
 
 export const COMPANY_INFO = {
-  name: 'BEST COMPUTEL',
+  name: 'Best Computel Garut (BCT Garut)',
   subName: 'Service & RMA Center',
-  address: 'Jl. Raya Computel No. 88, Pusat Servis & Garansi Komputer',
-  phone: '0812-3456-7890',
+  address: 'Jl. Terusan Pembangunan No.9C, Tarkid - Garut',
+  phone: '0895-2665-5777',
   hours: {
     weekdays: 'Senin - Jumat : 09.00 - 17.00',
     saturday: 'Sabtu : 09.00 - 15.00',

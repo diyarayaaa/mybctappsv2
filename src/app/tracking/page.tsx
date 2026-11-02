@@ -27,9 +27,7 @@ import {
   Info,
   ExternalLink,
   ChevronRight,
-  HelpCircle,
-  XCircle,
-  UserCheck
+  XCircle
 } from 'lucide-react';
 import { useTheme } from '@/components/theme/ThemeProvider';
 
@@ -126,13 +124,16 @@ function TrackingContent() {
   const { resolvedTheme, setTheme } = useTheme();
 
   const [receiptNumber, setReceiptNumber] = useState('');
+  const [phoneLast4, setPhoneLast4] = useState('');
   const [ticket, setTicket] = useState<TrackingTicket | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedNo, setCopiedNo] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Track the last queried number to avoid infinite re-render loops with searchParams
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+
+  // Track the last queried combination to avoid infinite re-render loops with searchParams
   const lastSearchedRef = useRef<string>('');
   const isSearchingRef = useRef<boolean>(false);
 
@@ -145,36 +146,65 @@ function TrackingContent() {
       ''
     ).trim();
 
-    if (urlParamNo && urlParamNo.toLowerCase() !== lastSearchedRef.current.toLowerCase()) {
+    const urlParamHp = (
+      searchParams.get('hp') ||
+      searchParams.get('phone') ||
+      searchParams.get('digit') ||
+      ''
+    ).replace(/[^0-9]/g, '').slice(0, 4);
+
+    if (urlParamNo) {
       setReceiptNumber(urlParamNo);
-      performSearch(urlParamNo);
+    }
+    if (urlParamHp) {
+      setPhoneLast4(urlParamHp);
+    }
+
+    if (urlParamNo && urlParamHp) {
+      performSearch(urlParamNo, urlParamHp);
+    } else if (urlParamNo && !urlParamHp) {
+      setTimeout(() => {
+        phoneInputRef.current?.focus();
+      }, 150);
     }
   }, [searchParams]);
 
-  const performSearch = async (queryNumber: string) => {
-    const cleaned = queryNumber.trim();
-    if (!cleaned) {
-      setErrorMessage('Silakan ketik nomor tanda terima terlebih dahulu.');
+  const performSearch = async (queryNumber: string, queryPhone: string) => {
+    const cleanedNo = queryNumber.trim();
+    const cleanedPhone = queryPhone.replace(/[^0-9]/g, '').slice(0, 4);
+
+    if (!cleanedNo) {
+      setErrorMessage('Silakan masukkan Nomor Layanan terlebih dahulu.');
       return;
     }
 
+    if (!cleanedPhone || cleanedPhone.length !== 4) {
+      setErrorMessage('Silakan masukkan 4 digit terakhir nomor handphone untuk verifikasi identitas.');
+      phoneInputRef.current?.focus();
+      return;
+    }
+
+    const queryKey = `${cleanedNo.toLowerCase()}#${cleanedPhone}`;
+
     // Prevent duplicate concurrent searches for identical query
-    if (isSearchingRef.current && lastSearchedRef.current.toLowerCase() === cleaned.toLowerCase()) {
+    if (isSearchingRef.current && lastSearchedRef.current === queryKey) {
       return;
     }
 
     isSearchingRef.current = true;
-    lastSearchedRef.current = cleaned;
+    lastSearchedRef.current = queryKey;
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
-      const res = await fetch(`/api/tracking?no=${encodeURIComponent(cleaned)}`);
+      const res = await fetch(
+        `/api/tracking?no=${encodeURIComponent(cleanedNo)}&hp=${encodeURIComponent(cleanedPhone)}`
+      );
       const data = await res.json();
 
       if (!res.ok || !data.success) {
         setTicket(null);
-        setErrorMessage(data.error || 'Nomor tanda terima tidak ditemukan.');
+        setErrorMessage(data.error || 'Nomor layanan atau 4 digit nomor HP tidak cocok.');
       } else {
         setTicket(data.ticket);
         setErrorMessage(null);
@@ -182,9 +212,11 @@ function TrackingContent() {
         // Update URL query cleanly only if different
         try {
           const currentUrlNo = searchParams.get('no') || '';
-          if (currentUrlNo.toLowerCase() !== cleaned.toLowerCase()) {
+          const currentUrlHp = searchParams.get('hp') || '';
+          if (currentUrlNo.toLowerCase() !== cleanedNo.toLowerCase() || currentUrlHp !== cleanedPhone) {
             const url = new URL(window.location.href);
-            url.searchParams.set('no', cleaned);
+            url.searchParams.set('no', cleanedNo);
+            url.searchParams.set('hp', cleanedPhone);
             window.history.replaceState(null, '', url.toString());
           }
         } catch {}
@@ -201,7 +233,33 @@ function TrackingContent() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    performSearch(receiptNumber);
+    if (!receiptNumber.trim()) {
+      setErrorMessage('Silakan masukkan Nomor Layanan terlebih dahulu.');
+      return;
+    }
+    if (!phoneLast4.trim() || phoneLast4.trim().length !== 4) {
+      setErrorMessage('Silakan masukkan 4 digit terakhir nomor handphone untuk verifikasi.');
+      phoneInputRef.current?.focus();
+      return;
+    }
+    performSearch(receiptNumber, phoneLast4);
+  };
+
+  const handleClearAll = () => {
+    setReceiptNumber('');
+    setPhoneLast4('');
+    setTicket(null);
+    setErrorMessage(null);
+    lastSearchedRef.current = '';
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('no');
+      url.searchParams.delete('nomor');
+      url.searchParams.delete('hp');
+      url.searchParams.delete('phone');
+      url.searchParams.delete('q');
+      window.history.replaceState(null, '', url.pathname);
+    } catch {}
   };
 
   const handleCopyReceipt = () => {
@@ -213,7 +271,9 @@ function TrackingContent() {
 
   const handleCopyTrackingLink = () => {
     if (!ticket) return;
-    const url = `${window.location.origin}/tracking?no=${encodeURIComponent(ticket.nomor_layanan)}`;
+    const url = phoneLast4.length === 4
+      ? `${window.location.origin}/tracking?no=${encodeURIComponent(ticket.nomor_layanan)}&hp=${encodeURIComponent(phoneLast4)}`
+      : `${window.location.origin}/tracking?no=${encodeURIComponent(ticket.nomor_layanan)}`;
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
@@ -287,26 +347,19 @@ Mohon info perkembangannya, terima kasih.`;
       <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <Link href="/tracking" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center p-1.5 shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform">
               <img
                 src="/logo.png"
                 alt="Best Computel Logo"
-                className="w-full h-full object-contain filter brightness-0 invert"
-                onError={(e) => {
-                  // Fallback icon if logo image fails
-                  e.currentTarget.style.display = 'none';
-                }}
+                className="w-full h-full object-contain"
               />
             </div>
             <div>
-              <div className="font-bold text-base tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                BEST COMPUTEL
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                  Tracking
-                </span>
+              <div className="font-bold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white leading-tight">
+                Best Computel RMA & Service
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Portal Pelanggan Servis & RMA Garansi
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                Halaman Tracking
               </p>
             </div>
           </Link>
@@ -338,14 +391,6 @@ Mohon info perkembangannya, terima kasih.`;
               <span>WhatsApp CS</span>
             </a>
 
-            {/* Internal Staff Link */}
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              <UserCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <span className="hidden md:inline">Login Staff</span>
-            </Link>
           </div>
         </div>
       </header>
@@ -355,16 +400,11 @@ Mohon info perkembangannya, terima kasih.`;
         <div className="absolute inset-0 bg-[radial-gradient(#2563eb18_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none opacity-50" />
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/80 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-semibold uppercase tracking-wider mb-4 animate-fade-in">
-            <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
-            Live Service Tracking
-          </div>
-
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
             Pantau Status Pengerjaan Servis Anda
           </h1>
           <p className="mt-2.5 text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Masukkan <span className="font-semibold text-slate-800 dark:text-slate-200">Nomor Tanda Terima</span> yang tertera pada nota fisik atau pesan WhatsApp untuk melihat status perbaikan secara transparan.
+            Masukkan <span className="font-semibold text-slate-800 dark:text-slate-200">Nomor Layanan (Misal: BCTRS26-0000)</span> dan <span className="font-semibold text-slate-800 dark:text-slate-200">4 Digit Terakhir No. HP</span> yang terdaftar untuk verifikasi status perbaikan.
           </p>
 
           {/* Search Form Box */}
@@ -372,15 +412,16 @@ Mohon info perkembangannya, terima kasih.`;
             onSubmit={handleSearchSubmit}
             className="mt-6 max-w-2xl mx-auto relative group"
           >
-            <div className="relative flex flex-col sm:flex-row items-center gap-2 p-1.5 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 shadow-xl shadow-blue-500/5 group-focus-within:border-blue-500 dark:group-focus-within:border-blue-500 transition-all">
-              <div className="relative flex-1 w-full flex items-center">
+            <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 sm:p-1.5 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 shadow-xl shadow-blue-500/5 group-focus-within:border-blue-500 dark:group-focus-within:border-blue-500 transition-all">
+              {/* Field 1: No. Layanan */}
+              <div className="relative flex-1 flex items-center">
                 <Search className="w-5 h-5 text-slate-400 ml-3 shrink-0 group-focus-within:text-blue-600 transition-colors" />
                 <input
                   type="text"
                   value={receiptNumber}
                   onChange={(e) => setReceiptNumber(e.target.value.toUpperCase())}
-                  placeholder="Contoh: BCTRS26-0001 atau BCT-20261001-001"
-                  className="w-full bg-transparent px-3 py-3 text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-sans focus:outline-none uppercase tracking-wide"
+                  placeholder="No. Layanan"
+                  className="w-full bg-transparent px-3 py-2.5 sm:py-3 text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-sans focus:outline-none uppercase tracking-wide"
                   autoComplete="off"
                   autoFocus
                 />
@@ -392,26 +433,53 @@ Mohon info perkembangannya, terima kasih.`;
                       setTicket(null);
                       setErrorMessage(null);
                       lastSearchedRef.current = '';
-                      try {
-                        const url = new URL(window.location.href);
-                        url.searchParams.delete('no');
-                        url.searchParams.delete('nomor');
-                        url.searchParams.delete('q');
-                        window.history.replaceState(null, '', url.pathname);
-                      } catch {}
                     }}
-                    className="p-1.5 mr-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                    title="Hapus"
+                    className="p-1.5 mr-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                    title="Hapus nomor layanan"
                   >
                     <XCircle className="w-4 h-4" />
                   </button>
                 )}
               </div>
 
+              {/* Divider */}
+              <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-slate-800" />
+              <div className="block sm:hidden w-full h-px bg-slate-100 dark:bg-slate-800/80 my-0.5" />
+
+              {/* Field 2: 4 Digit Terakhir No HP */}
+              <div className="relative sm:w-56 flex items-center">
+                <Phone className="w-4 h-4 text-slate-400 ml-3 sm:ml-2 shrink-0 group-focus-within:text-blue-600 transition-colors" />
+                <input
+                  ref={phoneInputRef}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={phoneLast4}
+                  onChange={(e) => setPhoneLast4(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+                  placeholder="4 digit akhir HP"
+                  className="w-full bg-transparent px-3 py-2.5 sm:py-3 text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-sans focus:outline-none tracking-widest"
+                  autoComplete="off"
+                />
+                {phoneLast4 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhoneLast4('');
+                      lastSearchedRef.current = '';
+                    }}
+                    className="p-1.5 mr-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                    title="Hapus 4 digit HP"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 disabled:opacity-50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 disabled:opacity-50 flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0"
               >
                 {isLoading ? (
                   <>
@@ -425,27 +493,6 @@ Mohon info perkembangannya, terima kasih.`;
                   </>
                 )}
               </button>
-            </div>
-
-            {/* Quick Suggestions / Examples */}
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <span className="inline-flex items-center gap-1">
-                <HelpCircle className="w-3.5 h-3.5 text-blue-500" />
-                Contoh Nomor:
-              </span>
-              {['BCTRS26-0344', 'BCTRS26-0067', 'BCTRS26-0001'].map((sample) => (
-                <button
-                  key={sample}
-                  type="button"
-                  onClick={() => {
-                    setReceiptNumber(sample);
-                    performSearch(sample);
-                  }}
-                  className="px-2 py-0.5 rounded-md font-mono text-[11px] bg-slate-200/70 dark:bg-slate-800 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900/40 dark:hover:text-blue-300 text-slate-700 dark:text-slate-300 transition-colors"
-                >
-                  {sample}
-                </button>
-              ))}
             </div>
           </form>
         </div>
@@ -896,50 +943,78 @@ Mohon info perkembangannya, terima kasih.`;
               <Search className="w-8 h-8" />
             </div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-              Masukkan Nomor Tanda Terima
+              Cek Status Servis & RMA
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              Ketikkan nomor tanda terima (No. RMA / Nota) di kolom pencarian di atas untuk memeriksa status perbaikan terkini.
+              Ketikkan Nomor Layanan dan 4 digit terakhir nomor HP Anda di atas untuk memeriksa status perbaikan terkini.
             </p>
           </div>
         )}
       </main>
 
       {/* 4. Store Information & Location Section */}
-      <section className="border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 py-8 px-4 sm:px-6 transition-colors">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-600 dark:text-slate-400">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 shrink-0">
-              <MapPin className="w-4 h-4" />
+      <section className="border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 py-10 px-4 sm:px-6 transition-colors">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
+          {/* 1. Lokasi */}
+          <a
+            href="https://www.google.com/maps/place/Best+Computel+BCT/@-7.2007207,107.9023831,17z/data=!3m1!4b1!4m6!3m5!1s0x2e68b1c8f4c71ac9:0x870cfd32b870e95b!8m2!3d-7.2007207!4d107.9023831!16s%2Fg%2F11b76l0f1g?entry=ttu&g_ep=EgoyMDI2MTAyMC4wIKXMDSoASAFQAw%3D%3D"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col items-center text-center p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-blue-500/50 hover:shadow-md hover:-translate-y-0.5 transition-all group cursor-pointer"
+            title="Buka Lokasi Best Computel di Google Maps"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-xs">
+              <MapPin className="w-5 h-5" />
             </div>
-            <div>
-              <p className="font-bold text-slate-900 dark:text-white text-xs">Lokasi Toko & Servis</p>
-              <p className="mt-0.5 leading-relaxed">
-                Jl. Terusan pembangunan No.9C, Tarogong kidul - Garut, Jawa Barat
-              </p>
-            </div>
-          </div>
+            <p className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center justify-center gap-1.5">
+              <span>Lokasi</span>
+              <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100" />
+            </p>
+            <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Jl. Terusan pembangunan No.9C, Tarogong kidul - Garut, Jawa Barat
+            </p>
+          </a>
 
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 shrink-0">
-              <Phone className="w-4 h-4" />
+          {/* 2. Customer Service WhatsApp */}
+          <a
+            href="https://wa.me/6289526655777?text=Hallo%20Admin%20Best%20Computel,%20saya%20ingin%20menanyakan%20perihal%20informasi%20servis%20dan%20klaim%20garansi."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col items-center text-center p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-blue-500/50 hover:shadow-md hover:-translate-y-0.5 transition-all group cursor-pointer"
+            title="Chat WhatsApp Customer Service Best Computel"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-xs">
+              <Phone className="w-5 h-5" />
             </div>
-            <div>
-              <p className="font-bold text-slate-900 dark:text-white text-xs">Customer Service</p>
-              <p className="mt-0.5">WhatsApp: 0895-2665-5777</p>
-              <p className="text-[11px] text-slate-400">Siap melayani pertanyaan teknis & garansi</p>
-            </div>
-          </div>
+            <p className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center justify-center gap-1.5">
+              <span>Customer Service</span>
+              <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100" />
+            </p>
+            <p className="mt-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
+              WhatsApp: 0895-2665-5777
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Siap melayani pertanyaan teknis & garansi
+            </p>
+          </a>
 
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 shrink-0">
-              <Calendar className="w-4 h-4" />
+          {/* 3. Jam Operasional */}
+          <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+            <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3 shadow-xs">
+              <Calendar className="w-5 h-5" />
             </div>
-            <div>
-              <p className="font-bold text-slate-900 dark:text-white text-xs">Jam Operasional</p>
-              <p className="mt-0.5">Senin - Sabtu: 08:30 - 20:00 WIB</p>
-              <p className="text-[11px] text-slate-400">Hari Minggu & Libur Nasional: Tutup</p>
-            </div>
+            <p className="font-bold text-slate-900 dark:text-white text-sm">
+              Jam Operasional
+            </p>
+            <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
+              Senin - Jum&apos;at: 09.00 - 17.00 WIB
+            </p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Sabtu: 09.00 - 15.00 WIB
+            </p>
+            <p className="text-[11px] text-rose-500 dark:text-rose-400 font-semibold mt-1">
+              Minggu & Libur Nasional: Tutup
+            </p>
           </div>
         </div>
       </section>

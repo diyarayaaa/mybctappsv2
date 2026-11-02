@@ -61,16 +61,16 @@ export function Modal({
         className={`relative w-full ${maxWidthClasses} bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden transform transition-all z-10 my-4 sm:my-8 text-slate-900 dark:text-slate-100 print:static print:block print:p-0 print:m-0 print:max-w-none print:w-full print:border-none print:shadow-none print:rounded-none print:overflow-visible print:bg-transparent`}
       >
         {/* Modal Header */}
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-900 dark:bg-slate-950 text-white flex items-center justify-between border-b border-slate-800 print:hidden">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-white dark:bg-slate-900 text-slate-900 dark:text-white flex items-center justify-between border-b border-slate-200 dark:border-slate-800 print:hidden">
           <div className="min-w-0 pr-2">
-            <h3 className="text-base sm:text-lg font-bold tracking-tight text-white truncate">
+            <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white truncate">
               {title}
             </h3>
-            {subtitle && <p className="text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>}
+            {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{subtitle}</p>}
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors shrink-0"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
             aria-label="Tutup Dialog"
           >
             <X className="w-5 h-5" />

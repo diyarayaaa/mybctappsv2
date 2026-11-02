@@ -15,19 +15,18 @@ import {
   Printer,
   HelpCircle,
   Settings,
-  ChevronDown,
   Pin,
   PinOff,
   X,
   Boxes,
-  Check,
   ShieldCheck,
   Wrench,
   Phone,
   Mail,
   Moon,
   Sun,
-  Laptop
+  Laptop,
+  BarChart3
 } from 'lucide-react';
 import { useTheme } from '@/components/theme/ThemeProvider';
 
@@ -49,7 +48,8 @@ const NAVIGATION_GROUPS: NavGroup[] = [
   {
     groupName: 'UTAMA',
     items: [
-      { name: 'Dashboard', href: '/', icon: LayoutDashboard }
+      { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+      { name: 'Dashboard Statistik', href: '/statistik', icon: BarChart3, adminOnly: true }
     ]
   },
   {
@@ -86,7 +86,7 @@ const NAVIGATION_GROUPS: NavGroup[] = [
     groupName: 'PENGATURAN',
     items: [
       { name: 'Preset Form Option', href: '/master?tab=keluhan', icon: SlidersHorizontal },
-      { name: 'Cetak Alamat', href: '/surat-jalan?tab=cetak', icon: Printer }
+      { name: 'Cetak Alamat Vendor', href: '/alamat', icon: Printer }
     ]
   }
 ];
@@ -109,8 +109,6 @@ function SidebarNav() {
 
   // Hover state for auto-hide
   const [isHovered, setIsHovered] = useState(false);
-  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
-  const [activeBranch, setActiveBranch] = useState('BCT SERVICE');
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
@@ -130,7 +128,6 @@ function SidebarNav() {
     }
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
-      setIsBranchDropdownOpen(false);
     }, 100);
   }, []);
 
@@ -148,6 +145,11 @@ function SidebarNav() {
     // 1. Dashboard
     if (href === '/') {
       return pathname === '/';
+    }
+
+    // 1b. Dashboard Statistik
+    if (href === '/statistik') {
+      return pathname === '/statistik' || pathname.startsWith('/statistik/');
     }
 
     // 2. Form Input Service (/tickets/new)
@@ -205,8 +207,8 @@ function SidebarNav() {
     return (
       <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 select-none">
         {/* 1. Header / Brand Logo */}
-        <div className="p-3 border-b border-slate-100 dark:border-slate-800/80">
-          <div className="flex items-center justify-between min-h-[36px]">
+        <div className="h-20 px-3 border-b border-slate-200/90 dark:border-slate-800 flex items-center shrink-0">
+          <div className="flex items-center justify-between w-full min-h-[36px]">
             <Link
               href="/"
               onClick={() => {
@@ -219,16 +221,16 @@ function SidebarNav() {
               <img
                 src="/logo.png"
                 alt="Best Computel"
-                className="h-7 w-7 shrink-0 object-contain"
+                className="h-8 w-8 shrink-0 object-contain"
               />
 
               {expanded && (
                 <div className="min-w-0 truncate">
-                  <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white uppercase leading-none block">
-                    BEST COMPUTEL BCT
+                  <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white leading-none block">
+                    BEST COMPUTEL
                   </span>
-                  <span className="text-[10px] text-slate-400 font-medium leading-tight">
-                    Service & RMA System
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold leading-tight block mt-1">
+                    RMA & Service
                   </span>
                 </div>
               )}
@@ -265,49 +267,6 @@ function SidebarNav() {
               </button>
             )}
           </div>
-
-          {/* Branch / Service Selector Pill */}
-          {expanded && (
-            <div className="mt-2.5 relative">
-              <button
-                type="button"
-                onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
-                className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl transition-colors shadow-2xs"
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Boxes className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                  <span className="truncate">{activeBranch}</span>
-                </div>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-150 ${isBranchDropdownOpen ? 'rotate-180' : ''
-                    }`}
-                />
-              </button>
-
-              {/* Dropdown Options */}
-              {isBranchDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                  {['BCT SERVICE', 'BCT GHITP', 'BCT STORE'].map((branch) => (
-                    <button
-                      key={branch}
-                      type="button"
-                      onClick={() => {
-                        setActiveBranch(branch);
-                        setIsBranchDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left ${activeBranch === branch
-                        ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-semibold'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60'
-                        }`}
-                    >
-                      <span>{branch}</span>
-                      {activeBranch === branch && <Check className="w-3 h-3 text-blue-600" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* 2. Navigation Groups List */}

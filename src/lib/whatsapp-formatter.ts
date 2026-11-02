@@ -13,6 +13,41 @@ export function cleanVendorName(vendorName: string): string {
 }
 
 /**
+ * Memeriksa apakah vendor tiket cocok dengan vendor tujuan yang dipilih
+ */
+export function isVendorMatch(ticketVendor?: string | null, targetVendor?: string | null): boolean {
+  if (!ticketVendor || !targetVendor) return false;
+
+  const tv = ticketVendor.trim().toLowerCase();
+  const sv = targetVendor.trim().toLowerCase();
+
+  // 1. Exact match
+  if (tv === sv) return true;
+
+  // 2. Cleaned suffix match (menghapus BDG, JKT, BANDUNG, JAKARTA)
+  const ctv = cleanVendorName(tv).toLowerCase();
+  const csv = cleanVendorName(sv).toLowerCase();
+  if (ctv && csv && (ctv === csv || ctv.includes(csv) || csv.includes(ctv))) {
+    return true;
+  }
+
+  // 3. Keyword / brand alias match
+  const keywords = [
+    'asus', 'acer', 'lenovo', 'epson', 'synnex', 'prisma mitra', 
+    'golden technology', 'asia global', 'asia raya', 'sc comp', 
+    'elite komputer', 'pak amin', 'mega komputer', 'agres', 
+    'interaksi cipta', 'dtg', 'gmp', 'gpl', 'nsn', 'novus', 'cck'
+  ];
+  for (const kw of keywords) {
+    if (tv.includes(kw) && sv.includes(kw)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Format nomor HP Indonesia ke format internasional (e.g. 081234 -> 6281234)
  */
 export function formatPhoneNumber(phone: string): string {
@@ -83,6 +118,7 @@ Estimasi Selesai : ${formatDateIndo(ticket.estimasi_selesai)}
 ━━━━━━━━━━━━━━━
 Lacak status pengerjaan unit Anda kapan saja secara online:
 https://mybctapps.vercel.app/tracking?no=${ticket.nomor_layanan}
+*(Gunakan 4 digit terakhir nomor HP Anda untuk verifikasi)*
 
 Mohon simpan pesan ini sebagai bukti serah terima perangkat.
 Catatan:

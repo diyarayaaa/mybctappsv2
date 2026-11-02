@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Search,
@@ -32,12 +32,12 @@ import { formatDateIndo } from '@/lib/whatsapp-formatter';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 function TicketsContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const initialSearch = searchParams.get('search') || '';
+  const search = searchParams.get('search') || '';
   const { user } = useAuth();
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [search, setSearch] = useState(initialSearch);
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [selectedTeknisi, setSelectedTeknisi] = useState('ALL');
   const [selectedJenis, setSelectedJenis] = useState('ALL');
@@ -227,18 +227,7 @@ function TicketsContent() {
 
       {/* Filter Toolbar */}
       <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3 transition-colors">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-          {/* Search */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 sm:pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden font-medium"
-            />
-          </div>
-
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
           {/* Status Filter */}
           <div>
             <select
@@ -311,6 +300,25 @@ function TicketsContent() {
             </button>
           </div>
         </div>
+
+        {/* Active Global Search Indicator */}
+        {search && (
+          <div className="flex items-center justify-between px-3.5 py-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl text-xs text-blue-700 dark:text-blue-300 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <Search className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>
+                Hasil pencarian tiket untuk: <strong className="font-bold text-slate-900 dark:text-white">"{search}"</strong>
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push('/tickets')}
+              className="text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              Hapus Filter Pencarian
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tickets Table */}

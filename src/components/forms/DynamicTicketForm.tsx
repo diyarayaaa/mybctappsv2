@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   JenisLayanan,
@@ -28,10 +28,20 @@ import {
   AlertCircle,
   Truck,
   ArrowLeft,
-  Check
+  Check,
+  Users,
+  Search,
+  History,
+  Eye,
+  ChevronRight,
+  Phone,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 import { AppSheetEnumList } from '@/components/forms/AppSheetEnumList';
+import { CustomerSearchModal, CustomerSummary } from '@/components/forms/CustomerSearchModal';
+import { CustomerHistoryModal, CustomerTicketHistory } from '@/components/forms/CustomerHistoryModal';
+import { formatDateIndo } from '@/lib/whatsapp-formatter';
 
 interface DynamicTicketFormProps {
   initialData?: Partial<Ticket>;
@@ -54,6 +64,22 @@ export function DynamicTicketForm({
     initialData?.nama_customer || (isEditMode ? '' : 'TN/NY. ')
   );
   const [noHp, setNoHp] = useState(initialData?.no_hp || '');
+
+  // Customer History & Auto-lookup States
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerSummary | null>(null);
+  const [customerTickets, setCustomerTickets] = useState<CustomerTicketHistory[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+  // Autocomplete dropdown states
+  const [nameSuggestions, setNameSuggestions] = useState<CustomerSummary[]>([]);
+  const [showNameDropdown, setShowNameDropdown] = useState(false);
+  const [phoneSuggestions, setPhoneSuggestions] = useState<CustomerSummary[]>([]);
+  const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
+
+  const nameDropdownRef = useRef<HTMLDivElement>(null);
+  const phoneDropdownRef = useRef<HTMLDivElement>(null);
 
   // Device
   const [jenisBarang, setJenisBarang] = useState<JenisBarang>(initialData?.jenis_barang || 'Laptop');
@@ -132,6 +158,138 @@ export function DynamicTicketForm({
       .then((data) => setKeluhanList(data.keluhan || []))
       .catch((err) => console.error('Failed to fetch keluhan list:', err));
   }, []);
+
+  // Fetch Customer ticket history
+  const fetchCustomerHistory = useCallback(async (nama: string, hp?: string) => {
+    if (!nama && !hp) return;
+    setIsLoadingHistory(true);
+    try {
+      const params = new URLSearchParams({
+        history: 'true',
+        nama: nama || '',
+        no_hp: hp || '',
+      });
+      const res = await fetch(`/api/customers/search?${params.toString()}`);
+      const data = await res.json();
+      if (data.tickets) {
+        setCustomerTickets(data.tickets);
+      }
+    } catch (err) {
+      console.error('Failed to fetch customer history:', err);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, []);
+
+  // Debounced search for Name autocomplete
+  useEffect(() => {
+    const clean = namaCustomer.replace(/^tn\/ny\.?\s*/i, '').trim();
+    if (clean.length < 2) {
+      setNameSuggestions([]);
+      setShowNameDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/customers/search?q=${encodeURIComponent(clean)}`);
+        const data = await res.json();
+        if (data.customers && data.customers.length > 0) {
+          setNameSuggestions(data.customers);
+          setShowNameDropdown(true);
+        } else {
+          setNameSuggestions([]);
+          setShowNameDropdown(false);
+        }
+      } catch (err) {
+        console.error('Error searching customer by name:', err);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [namaCustomer]);
+
+  // Debounced search for Phone autocomplete
+  useEffect(() => {
+    const clean = noHp.trim();
+    if (clean.length < 3) {
+      setPhoneSuggestions([]);
+      setShowPhoneDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/customers/search?q=${encodeURIComponent(clean)}`);
+        const data = await res.json();
+        if (data.customers && data.customers.length > 0) {
+          setPhoneSuggestions(data.customers);
+          setShowPhoneDropdown(true);
+        } else {
+          setPhoneSuggestions([]);
+          setShowPhoneDropdown(false);
+        }
+      } catch (err) {
+        console.error('Error searching customer by phone:', err);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [noHp]);
+
+  // Click outside listener for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (nameDropdownRef.current && !nameDropdownRef.current.contains(e.target as Node)) {
+        setShowNameDropdown(false);
+      }
+      if (phoneDropdownRef.current && !phoneDropdownRef.current.contains(e.target as Node)) {
+        setShowPhoneDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Auto-detect existing customer if initialData is provided
+  useEffect(() => {
+    if (initialData?.nama_customer && initialData.nama_customer !== 'TN/NY. ') {
+      fetch(`/api/customers/search?q=${encodeURIComponent(initialData.nama_customer)}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.customers && d.customers.length > 0) {
+            const match = d.customers.find(
+              (c: CustomerSummary) =>
+                c.nama_customer.toLowerCase().trim() ===
+                initialData.nama_customer?.toLowerCase().trim()
+            ) || d.customers[0];
+            setSelectedCustomer(match);
+            fetchCustomerHistory(match.nama_customer, match.no_hp);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [initialData?.nama_customer, fetchCustomerHistory]);
+
+  const handleSelectCustomer = (customer: CustomerSummary) => {
+    setNamaCustomer(customer.nama_customer);
+    if (customer.no_hp && customer.no_hp !== '-') {
+      setNoHp(customer.no_hp);
+    }
+    setSelectedCustomer(customer);
+    setShowNameDropdown(false);
+    setShowPhoneDropdown(false);
+    fetchCustomerHistory(customer.nama_customer, customer.no_hp);
+  };
+
+  const handleSelectDeviceFromHistory = (newJenis: string, newNama: string) => {
+    if (newJenis && JENIS_BARANG_LIST.includes(newJenis as JenisBarang)) {
+      handleJenisBarangChange(newJenis as JenisBarang);
+    }
+    if (newNama) {
+      setNamaBarang(newNama);
+    }
+  };
 
   const handleJenisBarangChange = (newJenis: JenisBarang) => {
     setJenisBarang(newJenis);
@@ -372,16 +530,30 @@ export function DynamicTicketForm({
 
       {/* Section 2: Data Pelanggan */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <ShieldAlert className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-            2. Informasi Pelanggan
-          </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              2. Informasi Pelanggan
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsSearchModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 rounded-xl active:scale-95 transition-all shadow-xs"
+              title="Buka buku kontak & riwayat pelanggan lama"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>Cari Buku Pelanggan</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-          {/* Nama Customer */}
-          <div>
+          {/* Nama Customer with Live Autocomplete */}
+          <div className="relative" ref={nameDropdownRef}>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Nama Customer *
@@ -389,7 +561,14 @@ export function DynamicTicketForm({
               <div className="flex gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setNamaCustomer('STOCK BCT')}
+                  onClick={() => {
+                    setNamaCustomer('STOCK BCT');
+                    fetch(`/api/customers/search?q=STOCK%20BCT`)
+                      .then((r) => r.json())
+                      .then((d) => {
+                        if (d.customers?.[0]) handleSelectCustomer(d.customers[0]);
+                      });
+                  }}
                   className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/70 rounded active:scale-95 transition-all"
                 >
                   + STOCK BCT
@@ -403,30 +582,195 @@ export function DynamicTicketForm({
                 </button>
               </div>
             </div>
+
             <input
               type="text"
               value={namaCustomer}
               onChange={(e) => setNamaCustomer(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+              onFocus={() => {
+                if (nameSuggestions.length > 0) setShowNameDropdown(true);
+              }}
+              placeholder="Contoh: TN/NY. NASRUL"
+              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden transition-all"
             />
+
+            {/* Dropdown Suggestions for Name */}
+            {showNameDropdown && nameSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1">
+                <div className="px-3.5 py-2 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  <span className="flex items-center gap-1.5">
+                    <History className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    Riwayat Pelanggan BCT
+                  </span>
+                  <span className="text-[10px] font-normal normal-case text-slate-400">
+                    Klik untuk auto-fill
+                  </span>
+                </div>
+                <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                  {nameSuggestions.map((item, idx) => (
+                    <button
+                      key={`name-sugg-${idx}`}
+                      type="button"
+                      onClick={() => handleSelectCustomer(item)}
+                      className="w-full text-left p-3 hover:bg-blue-50/80 dark:hover:bg-blue-950/40 transition-colors flex items-center justify-between gap-3 group"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
+                            {item.nama_customer}
+                          </span>
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 shrink-0">
+                            {item.total_servis}x
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5 truncate">
+                          <span className="font-mono text-slate-700 dark:text-slate-300">
+                            {item.no_hp || 'No HP -'}
+                          </span>
+                          {item.barang_terakhir && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate">Terakhir: {item.barang_terakhir}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Nomor WhatsApp */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-              Nomor WhatsApp / HP *
-            </label>
+          {/* Nomor WhatsApp with Live Autocomplete */}
+          <div className="relative" ref={phoneDropdownRef}>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Nomor WhatsApp / HP *
+              </label>
+              <span className="text-[10px] text-slate-400">
+                Ketik nomor untuk cari riwayat
+              </span>
+            </div>
+
             <input
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
               value={noHp}
-              onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
-              placeholder="08xxxxxxxxxx"
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
+              onFocus={() => {
+                if (phoneSuggestions.length > 0) setShowPhoneDropdown(true);
+              }}
+              placeholder="Contoh: 08123456789"
+              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden transition-all"
             />
+
+            {/* Dropdown Suggestions for Phone */}
+            {showPhoneDropdown && phoneSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1">
+                <div className="px-3.5 py-2 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  <span className="flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    Nomor Terdaftar di Database
+                  </span>
+                  <span className="text-[10px] font-normal normal-case text-slate-400">
+                    Klik untuk auto-fill
+                  </span>
+                </div>
+                <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                  {phoneSuggestions.map((item, idx) => (
+                    <button
+                      key={`phone-sugg-${idx}`}
+                      type="button"
+                      onClick={() => handleSelectCustomer(item)}
+                      className="w-full text-left p-3 hover:bg-blue-50/80 dark:hover:bg-blue-950/40 transition-colors flex items-center justify-between gap-3 group"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm font-mono font-bold text-blue-600 dark:text-blue-400">
+                            {item.no_hp}
+                          </span>
+                          <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            ({item.nama_customer})
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5 truncate">
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                            {item.total_servis}x servis
+                          </span>
+                          {item.barang_terakhir && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate">Terakhir: {item.barang_terakhir}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Returning Customer Badge / Historical Status Card */}
+        {selectedCustomer && (
+          <div className="mt-4 p-3.5 sm:p-4 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-linear-to-r from-blue-50/90 via-indigo-50/50 to-slate-50 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1 shadow-xs">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-blue-500/25 shrink-0">
+                <History className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                    Pelanggan Terdaftar
+                  </span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                    {selectedCustomer.total_servis}x Servis di Best Computel
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 truncate">
+                  Unit Terakhir:{' '}
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {selectedCustomer.barang_terakhir || '-'}
+                  </span>
+                  {selectedCustomer.servis_terakhir && (
+                    <span className="text-slate-500 dark:text-slate-400 ml-1 font-mono text-[11px]">
+                      ({formatDateIndo(selectedCustomer.servis_terakhir)})
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  fetchCustomerHistory(selectedCustomer.nama_customer, selectedCustomer.no_hp);
+                  setIsHistoryModalOpen(true);
+                }}
+                className="px-3.5 py-1.5 text-xs font-bold text-blue-700 dark:text-blue-300 bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 border border-blue-200 dark:border-blue-800 rounded-lg shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Lihat Riwayat ({selectedCustomer.total_servis} Tiket)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedCustomer(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="Tutup info riwayat"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Section 3: Data Perangkat & Keluhan */}
@@ -853,6 +1197,30 @@ export function DynamicTicketForm({
           <span>{isSubmitting ? 'Menyimpan...' : isEditMode ? 'Simpan Perubahan' : 'Simpan Tiket'}</span>
         </button>
       </div>
+
+      {/* Customer Search Modal */}
+      <CustomerSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onSelectCustomer={handleSelectCustomer}
+        onViewHistory={(customer) => {
+          setSelectedCustomer(customer);
+          fetchCustomerHistory(customer.nama_customer, customer.no_hp);
+          setIsSearchModalOpen(false);
+          setIsHistoryModalOpen(true);
+        }}
+      />
+
+      {/* Customer History Detail Modal */}
+      <CustomerHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        customerName={selectedCustomer?.nama_customer || namaCustomer}
+        noHp={selectedCustomer?.no_hp || noHp}
+        tickets={customerTickets}
+        isLoading={isLoadingHistory}
+        onSelectDevice={handleSelectDeviceFromHistory}
+      />
     </form>
   );
 }

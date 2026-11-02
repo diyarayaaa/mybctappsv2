@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Truck,
@@ -10,12 +10,15 @@ import {
   RefreshCw,
   Trash2,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Filter
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShippingLabelModal } from '@/components/prints/ShippingLabelModal';
 import { SuratJalan, Ticket, MasterVendor } from '@/types';
-import { formatDateIndo } from '@/lib/whatsapp-formatter';
+import { formatDateIndo, isVendorMatch } from '@/lib/whatsapp-formatter';
 
 export default function SuratJalanPage() {
   const [suratJalanList, setSuratJalanList] = useState<SuratJalan[]>([]);
@@ -27,10 +30,11 @@ export default function SuratJalanPage() {
   const [availableTickets, setAvailableTickets] = useState<Ticket[]>([]);
   const [selectedVendor, setSelectedVendor] = useState('');
   const [tglKirim, setTglKirim] = useState(new Date().toISOString().split('T')[0]);
-  const [ekspedisi, setEkspedisi] = useState('Travel Cipaganti / Kirim Langsung');
+  const [ekspedisi, setEkspedisi] = useState('');
   const [noResi, setNoResi] = useState('');
   const [catatan, setCatatan] = useState('');
   const [selectedTicketIds, setSelectedTicketIds] = useState<string[]>([]);
+  const [showUnassigned, setShowUnassigned] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -95,15 +99,46 @@ export default function SuratJalanPage() {
       setVendors(vendorData.vendors || []);
 
       const tickets: Ticket[] = ticketData.tickets || [];
+      // Filter: Hanya tiket yang BELUM pernah dikirim (belum ada nomor surat jalan dan belum ada tgl kirim vendor)
       const eligible = tickets.filter(
         (t) =>
-          (t.jenis_layanan === 'GARANSI' || t.status === 'PROSES GARANSI' || t.status === 'ALIH SERVICE') &&
-          t.status !== 'SELESAI & DIAMBIL'
+          (!t.no_surat_jalan || t.no_surat_jalan.trim() === '') &&
+          (!t.tgl_kirim_vendor || t.tgl_kirim_vendor.trim() === '') &&
+          t.status !== 'SELESAI & DIAMBIL' &&
+          (
+            t.jenis_layanan === 'GARANSI' ||
+            t.status === 'PROSES GARANSI' ||
+            t.status === 'ALIH SERVICE' ||
+            Boolean(t.distributor_vendor && t.distributor_vendor.trim() !== '')
+          )
       );
       setAvailableTickets(eligible);
     } catch (err) {
       console.error('Failed to fetch modal data:', err);
     }
+  };
+
+  // Filter barang yang cocok dengan vendor yang dipilih
+  const matchingTickets = useMemo(() => {
+    if (!selectedVendor) return [];
+    return availableTickets.filter((t) => isVendorMatch(t.distributor_vendor, selectedVendor));
+  }, [availableTickets, selectedVendor]);
+
+  // Barang garansi yang belum memiliki vendor ditentukan
+  const unassignedTickets = useMemo(() => {
+    return availableTickets.filter((t) => !t.distributor_vendor || t.distributor_vendor.trim() === '');
+  }, [availableTickets]);
+
+  const getPendingCountForVendor = useCallback(
+    (vendorName: string) => {
+      return availableTickets.filter((t) => isVendorMatch(t.distributor_vendor, vendorName)).length;
+    },
+    [availableTickets]
+  );
+
+  const handleVendorChange = (newVendor: string) => {
+    setSelectedVendor(newVendor);
+    setSelectedTicketIds([]);
   };
 
   useEffect(() => {
@@ -114,7 +149,12 @@ export default function SuratJalanPage() {
     fetchCreateData();
     setIsCreateModalOpen(true);
     setCreateError('');
+    setSelectedVendor('');
     setSelectedTicketIds([]);
+    setEkspedisi('');
+    setNoResi('');
+    setCatatan('');
+    setShowUnassigned(false);
   };
 
   const handleToggleTicketSelect = (id: string) => {
@@ -367,15 +407,18 @@ export default function SuratJalanPage() {
               </label>
               <select
                 value={selectedVendor}
-                onChange={(e) => setSelectedVendor(e.target.value)}
+                onChange={(e) => handleVendorChange(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden"
               >
                 <option value="">-- Pilih Distributor / Vendor --</option>
-                {vendors.map((v) => (
-                  <option key={v.id} value={v.nama_vendor}>
-                    {v.nama_vendor} ({v.wilayah})
-                  </option>
-                ))}
+                {vendors.map((v) => {
+                  const count = getPendingCountForVendor(v.nama_vendor);
+                  return (
+                    <option key={v.id} value={v.nama_vendor}>
+                      {v.nama_vendor} ({v.wilayah}){count > 0 ? ` [${count} barang siap kirim]` : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -401,6 +444,7 @@ export default function SuratJalanPage() {
                 type="text"
                 value={ekspedisi}
                 onChange={(e) => setEkspedisi(e.target.value)}
+                placeholder="Contoh: JNE, J&T, Kirim Langsung, dll."
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-hidden"
               />
             </div>
@@ -418,28 +462,70 @@ export default function SuratJalanPage() {
             </div>
           </div>
 
-          {/* Checklist */}
+          {/* Checklist Barang */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Pilih Barang yang Dikirim ({selectedTicketIds.length} terpilih) *
               </label>
-              <span className="text-[11px] text-slate-400">Centang unit yang masuk</span>
+
+              {selectedVendor && matchingTickets.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allIds = matchingTickets.map((t) => t.id);
+                      setSelectedTicketIds(allIds);
+                    }}
+                    className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Pilih Semua ({matchingTickets.length})
+                  </button>
+                  {selectedTicketIds.length > 0 && (
+                    <>
+                      <span className="text-slate-300 dark:text-slate-700">•</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTicketIds([])}
+                        className="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline"
+                      >
+                        Batal Pilih
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div className="max-h-52 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
-              {availableTickets.length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-400">
-                  Tidak ada tiket garansi/alih servis yang menunggu pengiriman.
-                </div>
-              ) : (
-                availableTickets.map((t) => {
+            {!selectedVendor ? (
+              <div className="p-6 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
+                <Truck className="w-8 h-8 text-blue-500 mx-auto mb-2 opacity-60" />
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Pilih Distributor / Vendor Tujuan di atas
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  Sistem akan otomatis memfilter dan menampilkan barang yang belum dikirim ke vendor tersebut.
+                </p>
+              </div>
+            ) : matchingTickets.length === 0 ? (
+              <div className="p-5 text-center border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/40">
+                <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1.5" />
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Tidak ada barang yang menunggu pengiriman ke {selectedVendor}.
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Semua barang untuk vendor ini sudah dibuatkan surat jalan atau belum ada tiket baru.
+                </p>
+              </div>
+            ) : (
+              <div className="max-h-56 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                {matchingTickets.map((t) => {
                   const isChecked = selectedTicketIds.includes(t.id);
                   return (
                     <label
                       key={t.id}
                       className={`flex items-start gap-3 p-2.5 sm:p-3 text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
-                        isChecked ? 'bg-blue-50/60 dark:bg-blue-950/40' : ''
+                        isChecked ? 'bg-blue-50/70 dark:bg-blue-950/40' : ''
                       }`}
                     >
                       <input
@@ -450,19 +536,80 @@ export default function SuratJalanPage() {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="font-mono font-bold text-slate-900 dark:text-white">{t.nomor_layanan}</span>
-                          <span className="font-semibold text-slate-800 dark:text-slate-200">• {t.nama_barang}</span>
-                          <span className="text-slate-400 font-mono text-[11px]">(SN: {t.serial_number})</span>
+                          <span className="font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.2 rounded border border-blue-200 dark:border-blue-800">
+                            {t.nomor_layanan}
+                          </span>
+                          <span className="font-bold text-slate-900 dark:text-white">• {t.nama_barang}</span>
+                          {t.serial_number && (
+                            <span className="text-slate-400 font-mono text-[11px]">(SN: {t.serial_number})</span>
+                          )}
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                            {t.status || 'BELUM DIKIRIM'}
+                          </span>
                         </div>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
-                          Keluhan: {t.keluhan} • Pemilik: {t.nama_customer}
+                          Keluhan: {t.keluhan || '-'} • Pemilik: {t.nama_customer || '-'}
                         </p>
                       </div>
                     </label>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
+
+            {/* Opsi Opsional: Barang garansi yang belum ditentukan vendor */}
+            {selectedVendor && unassignedTickets.length > 0 && (
+              <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowUnassigned(!showUnassigned)}
+                  className="text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1.5"
+                >
+                  <span>{showUnassigned ? '▼ Sembunyikan' : '▶ Tampilkan'}</span>
+                  <span>{unassignedTickets.length} barang garansi lain yang belum memiliki vendor</span>
+                </button>
+
+                {showUnassigned && (
+                  <div className="mt-2 max-h-40 overflow-y-auto border border-dashed border-slate-300 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-800 bg-white/60 dark:bg-slate-900/60 p-1">
+                    <p className="text-[10px] text-slate-400 px-2 py-1 italic">
+                      Centang barang di bawah jika ingin mengirim unit ini ke {selectedVendor}:
+                    </p>
+                    {unassignedTickets.map((t) => {
+                      const isChecked = selectedTicketIds.includes(t.id);
+                      return (
+                        <label
+                          key={t.id}
+                          className={`flex items-start gap-3 p-2 text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors rounded-lg ${
+                            isChecked ? 'bg-blue-50/70 dark:bg-blue-950/40' : ''
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleToggleTicketSelect(t.id)}
+                            className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                                {t.nomor_layanan}
+                              </span>
+                              <span className="font-semibold text-slate-800 dark:text-slate-200">• {t.nama_barang}</span>
+                              {t.serial_number && (
+                                <span className="text-slate-400 font-mono text-[11px]">(SN: {t.serial_number})</span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
+                              Keluhan: {t.keluhan || '-'} • Pemilik: {t.nama_customer || '-'}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div>

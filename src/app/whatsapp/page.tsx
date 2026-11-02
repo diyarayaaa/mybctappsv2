@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  MessageSquare,
   Copy,
   Check,
   Send,
@@ -132,22 +131,6 @@ function WhatsAppHubContent() {
 
   return (
     <div className="space-y-6 w-full pb-12 animate-in fade-in">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40">
-            <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Laporan & Otomasi WhatsApp
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Rekap otomatis siap kirim untuk grup tim logistik, update sales toko, dan notifikasi pelanggan.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Main Tabs Segmented Control */}
       <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl w-full sm:w-fit overflow-x-auto border border-slate-200/70 dark:border-slate-700/60">

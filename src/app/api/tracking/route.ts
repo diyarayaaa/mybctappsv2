@@ -24,12 +24,36 @@ export async function GET(request: NextRequest) {
       ''
     ).trim();
 
+    const cleanPhoneDigits = (
+      searchParams.get('hp') ||
+      searchParams.get('phone') ||
+      searchParams.get('digit') ||
+      searchParams.get('telp') ||
+      ''
+    ).replace(/[^0-9]/g, '').trim();
+
     if (!receiptNo) {
       return NextResponse.json(
-        { error: 'Nomor tanda terima wajib diisi.' },
+        { error: 'Nomor layanan wajib diisi.' },
         { status: 400 }
       );
     }
+
+    if (!cleanPhoneDigits) {
+      return NextResponse.json(
+        { error: 'Masukkan 4 digit terakhir nomor handphone untuk verifikasi identitas.' },
+        { status: 400 }
+      );
+    }
+
+    if (cleanPhoneDigits.length < 4) {
+      return NextResponse.json(
+        { error: 'Nomor handphone verifikasi minimal 4 digit (masukkan 4 digit terakhir).' },
+        { status: 400 }
+      );
+    }
+
+    const inputLast4 = cleanPhoneDigits.slice(-4);
 
     // 1. Query ticket by exact nomor_layanan or id (case insensitive)
     const stmt = db.prepare(`
@@ -71,9 +95,32 @@ export async function GET(request: NextRequest) {
     if (!rawTicket) {
       return NextResponse.json(
         { 
-          error: `Nomor tanda terima "${receiptNo}" tidak ditemukan. Pastikan nomor yang Anda masukkan sesuai dengan yang tercantum pada lembar nota atau pesan WhatsApp.` 
+          error: `Nomor layanan "${receiptNo}" tidak ditemukan. Pastikan nomor yang Anda masukkan sesuai dengan yang tercantum pada lembar nota atau pesan WhatsApp.` 
         },
         { status: 404 }
+      );
+    }
+
+    // Verifikasi 4 digit terakhir nomor handphone pelanggan
+    const rawPhone = String(rawTicket.no_hp || '');
+    const cleanDbPhone = rawPhone.replace(/[^0-9]/g, '');
+
+    if (cleanDbPhone.length < 4) {
+      return NextResponse.json(
+        { 
+          error: 'Nomor tiket ini tidak memiliki data nomor handphone yang tersimpan untuk verifikasi mandiri. Silakan hubungi customer service kami.' 
+        },
+        { status: 403 }
+      );
+    }
+
+    const dbLast4 = cleanDbPhone.slice(-4);
+    if (dbLast4 !== inputLast4) {
+      return NextResponse.json(
+        { 
+          error: '4 digit nomor HP tidak cocok dengan data pendaftaran tiket ini. Silakan periksa kembali 4 digit terakhir nomor HP Anda.' 
+        },
+        { status: 403 }
       );
     }
 
