@@ -1,0 +1,228 @@
+Microsoft Windows [Version 10.0.19045.6466]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\Users\best-comp-rma-servis>git --version
+git version 2.56.0.windows.4
+
+C:\Users\best-comp-rma-servis>cd ..
+
+C:\Users>cd ..
+
+C:\>cd Users
+
+C:\Users>cd %userprofile%\Desktop
+
+C:\Users\best-comp-rma-servis\Desktop>mkdir mybctapps
+
+C:\Users\best-comp-rma-servis\Desktop>cd mybctapps
+
+C:\Users\best-comp-rma-servis\Desktop\mybctapps>git clone https://github.com/diyarayaaa/mybctappsv2.git
+Cloning into 'mybctappsv2'...
+remote: Enumerating objects: 620, done.
+remote: Counting objects: 100% (620/620), done.
+remote: Compressing objects: 100% (250/250), done.
+remote: Total 620 (delta 276), reused 615 (delta 271), pack-reused 0 (from 0)
+Receiving objects: 100% (620/620), 4.98 MiB | 5.57 MiB/s, done.
+Resolving deltas: 100% (276/276), done.
+
+C:\Users\best-comp-rma-servis\Desktop\mybctapps>cd mybctappsv2
+
+C:\Users\best-comp-rma-servis\Desktop\mybctapps\mybctappsv2>npm install
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'mybctappsv2@1.0.0',
+npm warn EBADENGINE   required: { node: '22.x' },
+npm warn EBADENGINE   current: { node: 'v26.13.0', npm: '11.20.0' }
+npm warn EBADENGINE }
+npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 390 packages, and audited 391 packages in 3m
+
+146 packages are looking for funding
+  run `npm fund` for details
+
+25 vulnerabilities (17 moderate, 7 high, 1 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   unrs-resolver@1.12.2 (postinstall: node postinstall.js)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+npm notice
+npm notice New major version of npm available! 11.20.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+C:\Users\best-comp-rma-servis\Desktop\mybctapps\mybctappsv2>npm install
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'mybctappsv2@1.0.0',
+npm warn EBADENGINE   required: { node: '22.x' },
+npm warn EBADENGINE   current: { node: 'v26.13.0', npm: '11.20.0' }
+npm warn EBADENGINE }
+
+up to date, audited 391 packages in 10s
+
+146 packages are looking for funding
+  run `npm fund` for details
+
+25 vulnerabilities (17 moderate, 7 high, 1 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   unrs-resolver@1.12.2 (postinstall: node postinstall.js)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+
+Approved unrs-resolver:
+  added unrs-resolver@1.12.2
+
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'mybctappsv2@1.0.0',
+npm warn EBADENGINE   required: { node: '22.x' },
+npm warn EBADENGINE   current: { node: 'v26.13.0', npm: '11.20.0' }
+npm warn EBADENGINE }
+
+changed 20 packages, and audited 391 packages in 1m
+
+146 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+image-size  0.6.3 - 2.0.2
+Severity: high
+image-size: JXL and HEIF parsers allow denial of service through infinite loops - https://github.com/advisories/GHSA-5p2g-fcmc-qvqq
+image-size: ICNS parser allows denial of service through an infinite loop - https://github.com/advisories/GHSA-w3rx-r6r6-pgpr
+fix available via `npm audit fix --force`
+Will install pptxgenjs@4.0.0, which is a breaking change
+node_modules/image-size
+  pptxgenjs  >=4.0.1-beta.0
+  Depends on vulnerable versions of image-size
+  node_modules/pptxgenjs
+
+minimatch  <11.0.1
+Severity: moderate
+minimatch has potential denial of service via globparts amplification - https://github.com/advisories/GHSA-g3hv-75wg-m249
+fix available via `npm audit fix --force`
+Will install eslint@4.0.0, which is a breaking change
+node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
+node_modules/minimatch
+  @eslint/config-array  *
+  Depends on vulnerable versions of minimatch
+  node_modules/@eslint/config-array
+    eslint  0.7.1 - 2.0.0-rc.1 || >=4.1.0
+    Depends on vulnerable versions of @eslint-community/eslint-utils
+    Depends on vulnerable versions of @eslint/config-array
+    Depends on vulnerable versions of @eslint/eslintrc
+    Depends on vulnerable versions of minimatch
+    node_modules/eslint
+      @eslint-community/eslint-utils  *
+      Depends on vulnerable versions of eslint
+      node_modules/@eslint-community/eslint-utils
+      node_modules/@next/eslint-plugin-next/node_modules/@eslint-community/eslint-utils
+        @next/eslint-plugin-next  >=16.3.0-canary.0
+        Depends on vulnerable versions of @eslint-community/eslint-utils
+        node_modules/@next/eslint-plugin-next
+          eslint-config-next  >=10.2.1-canary.2
+          Depends on vulnerable versions of @next/eslint-plugin-next
+          Depends on vulnerable versions of eslint
+          Depends on vulnerable versions of eslint-plugin-import
+          Depends on vulnerable versions of eslint-plugin-jsx-a11y
+          Depends on vulnerable versions of eslint-plugin-react
+          Depends on vulnerable versions of typescript-eslint
+          node_modules/eslint-config-next
+        @typescript-eslint/utils  *
+        Depends on vulnerable versions of @eslint-community/eslint-utils
+        Depends on vulnerable versions of @typescript-eslint/typescript-estree
+        Depends on vulnerable versions of eslint
+        node_modules/@typescript-eslint/utils
+          @typescript-eslint/eslint-plugin  *
+          Depends on vulnerable versions of @typescript-eslint/parser
+          Depends on vulnerable versions of @typescript-eslint/type-utils
+          Depends on vulnerable versions of @typescript-eslint/utils
+          Depends on vulnerable versions of eslint
+          node_modules/@typescript-eslint/eslint-plugin
+            typescript-eslint  *
+            Depends on vulnerable versions of @typescript-eslint/eslint-plugin
+            Depends on vulnerable versions of @typescript-eslint/parser
+            Depends on vulnerable versions of @typescript-eslint/typescript-estree
+            Depends on vulnerable versions of @typescript-eslint/utils
+            Depends on vulnerable versions of eslint
+            node_modules/typescript-eslint
+          @typescript-eslint/type-utils  >=5.9.2-alpha.0
+          Depends on vulnerable versions of @typescript-eslint/typescript-estree
+          Depends on vulnerable versions of @typescript-eslint/utils
+          Depends on vulnerable versions of eslint
+          node_modules/@typescript-eslint/type-utils
+      @typescript-eslint/parser  *
+      Depends on vulnerable versions of @typescript-eslint/typescript-estree
+      Depends on vulnerable versions of eslint
+      node_modules/@typescript-eslint/parser
+  @eslint/eslintrc  0.0.1 || >=0.1.1
+  Depends on vulnerable versions of minimatch
+  node_modules/@eslint/eslintrc
+  @typescript-eslint/typescript-estree  >=6.16.0
+  Depends on vulnerable versions of minimatch
+  node_modules/@typescript-eslint/typescript-estree
+  eslint-plugin-import  >=1.15.0
+  Depends on vulnerable versions of minimatch
+  node_modules/eslint-plugin-import
+  eslint-plugin-jsx-a11y  >=6.5.0
+  Depends on vulnerable versions of minimatch
+  node_modules/eslint-plugin-jsx-a11y
+  eslint-plugin-react  >=7.23.0
+  Depends on vulnerable versions of minimatch
+  node_modules/eslint-plugin-react
+
+next  16.0.0 - 16.4.0
+Severity: critical
+Next.js: Remote Code Execution in next/og ImageResponse - https://github.com/advisories/GHSA-vcvr-r3jv-pc5j
+Next.js: Pending `use cache` fill can leak Draft Mode content into regular responses and persisted pages - https://github.com/advisories/GHSA-3w37-wq28-93x7
+Next.js has cache poisoning of SSG and ISR pages in self-hosted applications - https://github.com/advisories/GHSA-4jqv-mc3x-m676
+Next.js has information disclosure in development server's Model Context Protocol endpoint - https://github.com/advisories/GHSA-39w2-rjm5-chcv
+Next.js has information disclosure in App Router metadata image routes via dynamicParams bypass - https://github.com/advisories/GHSA-f87g-xv8r-7p7x
+Next.js has cache poisoning in SSG/ISR rendering that leads to cross-user content substitution and persistent denial of service - https://github.com/advisories/GHSA-mcj8-r9mp-w47p
+Next.js has Server-Side Request Forgery in Image Optimization - https://github.com/advisories/GHSA-cjq9-62q9-8jv4
+Next.js: Unauthenticated Remote Code Execution in Image Optimization API when SVG files are used - https://github.com/advisories/GHSA-2464-fhr4-w9xw
+Next.js: Denial of Service in App Router using Server Actions - https://github.com/advisories/GHSA-p3m5-59mp-jv5r
+next.js cache leak across root param values in nested 'use cache' functions - https://github.com/advisories/GHSA-h694-7cp9-m8p3
+Next.js: Unauthenticated Remote Code Execution in `use cache` functions returning typed arrays - https://github.com/advisories/GHSA-673q-mjm6-r5xr
+fix available via `npm audit fix --force`
+Will install next@16.4.3, which is outside the stated dependency range
+node_modules/next
+
+xlsx  *
+Severity: high
+Prototype Pollution in sheetJS - https://github.com/advisories/GHSA-4r6h-8v6p-xvw6
+SheetJS Regular Expression Denial of Service (ReDoS) - https://github.com/advisories/GHSA-5pgg-2g8v-p4x9
+No fix available
+node_modules/xlsx
+
+20 vulnerabilities (16 moderate, 3 high, 1 critical)
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+C:\Users\best-comp-rma-servis\Desktop\mybctapps\mybctappsv2>
+C:\Users\best-comp-rma-servis\Desktop\mybctapps\mybctappsv2>
