@@ -7,6 +7,8 @@ function getLocalDevOrigins(): string[] {
     "localhost:2525",
     "localhost:3005",
     "localhost:3000",
+    "*.trycloudflare.com",
+    "*.devtunnels.ms",
     "127.0.0.1",
     "127.0.0.1:2525",
     "127.0.0.1:3005",
@@ -41,7 +43,7 @@ function getLocalDevOrigins(): string[] {
 }
 
 const nextConfig: NextConfig = {
-  // Mengizinkan akses chunk dev resources dari IP LAN dan HP
+  // Mengizinkan akses chunk dev resources dari IP LAN, HP, dan Cloudflare Tunnel
   allowedDevOrigins: getLocalDevOrigins(),
 };
 

@@ -259,59 +259,6 @@ function seedInitialData(db: DatabaseSync) {
       }
     }
 
-    // Seed Master Vendors
-    const vendorCountStmt = db.prepare('SELECT COUNT(*) as count FROM master_vendors');
-    const vendorCount = vendorCountStmt.get() as { count: number };
-    if (vendorCount.count === 0) {
-      const insertVendor = db.prepare(`
-        INSERT INTO master_vendors (nama_vendor, wilayah, alamat_lengkap, kontak_wa, is_active)
-        VALUES (?, ?, ?, ?, 1)
-      `);
-
-      const defaultVendors: [string, 'BDG' | 'JKT' | 'OTHER', string, string][] = [
-        [
-          'Q-CHOX COMPUTER',
-          'OTHER',
-          'Jalan Raya Cilauteureun KM.00 Pameungpeuk - Garut 44175\nDEKAT ALUN ALUN PAMEUNGPEUK',
-          'UP ANDI Q CHOCK (0821-2222-7280)'
-        ],
-        [
-          'ASUS SERVICE CENTER BANDUNG',
-          'BDG',
-          'Ruko Segitiga Mas Kosambi Blok F-12, Jl. Jend. A. Yani No.221-223, Bandung 40112',
-          'UP CS ASUS BANDUNG (022-7234567)'
-        ],
-        [
-          'ACER SERVICE CENTER BANDUNG',
-          'BDG',
-          'Jl. Gatot Subroto No. 45, Malabar, Kec. Lengkong, Kota Bandung 40262',
-          'UP BAGIAN RMA ACER (022-7312345)'
-        ],
-        [
-          'LENOVO EXCLUSIVE SERVICE CENTER BDG',
-          'BDG',
-          'Istana BEC Lt. 2 Blok W-05, Jl. Purnawarman No.13-15, Bandung 40117',
-          'UP CS LENOVO RMA (022-4201234)'
-        ],
-        [
-          'EPSON SERVICE CENTER BANDUNG',
-          'BDG',
-          'Jl. Talaga Bodas No. 35, Malabar, Kec. Lengkong, Kota Bandung 40262',
-          'UP CS SERVICE EPSON (022-7301234)'
-        ],
-        [
-          'SYNNEX METRODATA JAKARTA',
-          'JKT',
-          'Jl. Danau Sunter Barat Blok A-3 No. 38-39, Sunter Agung, Tanjung Priok, Jakarta Utara 14350',
-          'UP DEPT RMA SYNNEX (021-29638000)'
-        ]
-      ];
-
-      for (const v of defaultVendors) {
-        insertVendor.run(...v);
-      }
-    }
-
     // Seed Master Keluhan (Standardized & Non-Redundant)
     const insertKeluhan = db.prepare(`
       INSERT OR IGNORE INTO master_keluhan (teks_keluhan)

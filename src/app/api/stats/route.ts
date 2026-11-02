@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { DashboardStats } from '@/types';
+import { checkAndRunDailyAutoBackup } from '@/lib/backup';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    // Non-blocking daily auto-backup check
+    checkAndRunDailyAutoBackup().catch((err) =>
+      console.error('[stats] Auto-backup background check failed:', err)
+    );
+
     // 1. BARANG MASUK HARI INI: IN(JENIS RMA, {"SERVICE", "GARANSI"}) AND TGL MASUK = TODAY()
     const q1 = db.prepare(`
       SELECT COUNT(*) as count FROM tickets 

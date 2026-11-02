@@ -26,7 +26,8 @@ import {
   Moon,
   Sun,
   Laptop,
-  BarChart3
+  BarChart3,
+  FileSpreadsheet
 } from 'lucide-react';
 import { useTheme } from '@/components/theme/ThemeProvider';
 
@@ -86,6 +87,7 @@ const NAVIGATION_GROUPS: NavGroup[] = [
     groupName: 'PENGATURAN',
     items: [
       { name: 'Preset Form Option', href: '/master?tab=keluhan', icon: SlidersHorizontal },
+      { name: 'Backup Spreadsheet', href: '/master?tab=backup', icon: FileSpreadsheet },
       { name: 'Cetak Alamat Vendor', href: '/alamat', icon: Printer }
     ]
   }
@@ -194,6 +196,9 @@ function SidebarNav() {
       if (targetTab === 'keluhan') {
         return currentTab === 'keluhan';
       }
+      if (targetTab === 'backup') {
+        return currentTab === 'backup';
+      }
       // Default: vendor
       return !currentTab || currentTab === 'vendor';
     }
@@ -293,43 +298,43 @@ function SidebarNav() {
                   const active = isItemActive(item.href);
                   const Icon = item.icon;
 
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => {
-                      if (isMobile) setIsMobileSidebarOpen(false);
-                    }}
-                    title={!expanded ? item.name : undefined}
-                    className={`flex items-center rounded-xl text-xs transition-colors duration-100 group relative ${expanded
-                      ? 'gap-2.5 px-3 py-2 font-medium'
-                      : 'justify-center p-2.5 w-10 h-10 mx-auto'
-                      } ${active
-                        ? 'bg-blue-500/15 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold border border-blue-300/80 dark:border-blue-700/60 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
-                      }`}
-                  >
-                    <Icon
-                      className={`w-4 h-4 shrink-0 ${active
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => {
+                        if (isMobile) setIsMobileSidebarOpen(false);
+                      }}
+                      title={!expanded ? item.name : undefined}
+                      className={`flex items-center rounded-xl text-xs transition-colors duration-100 group relative ${expanded
+                        ? 'gap-2.5 px-3 py-2 font-medium'
+                        : 'justify-center p-2.5 w-10 h-10 mx-auto'
+                        } ${active
+                          ? 'bg-blue-500/15 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold border border-blue-300/80 dark:border-blue-700/60 shadow-2xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
                         }`}
-                    />
+                    >
+                      <Icon
+                        className={`w-4 h-4 shrink-0 ${active
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'
+                          }`}
+                      />
 
-                    {expanded && <span className="truncate whitespace-nowrap">{item.name}</span>}
+                      {expanded && <span className="truncate whitespace-nowrap">{item.name}</span>}
 
-                    {/* Floating tooltip on compact/collapsed mode on desktop */}
-                    {!expanded && (
-                      <span className="fixed left-16 ml-2.5 px-2.5 py-1 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-xl border border-slate-700 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">
-                        {item.name}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          );
-        })}
+                      {/* Floating tooltip on compact/collapsed mode on desktop */}
+                      {!expanded && (
+                        <span className="fixed left-16 ml-2.5 px-2.5 py-1 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-xl border border-slate-700 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">
+                          {item.name}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
 
         {/* 3. Bottom Pinned Items: Support & Settings */}
