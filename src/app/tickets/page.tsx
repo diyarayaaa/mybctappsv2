@@ -8,6 +8,7 @@ import {
   PlusCircle,
   RefreshCw,
   Printer,
+  ChevronLeft,
   ChevronRight,
   MessageSquare,
   Truck,
@@ -44,6 +45,10 @@ function TicketsContent() {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [isLoading, setIsLoading] = useState(true);
   const [tableViewMode, setTableViewMode] = useState<'full' | 'compact'>('full');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(25);
 
   const formatRupiah = (val?: number | null) => {
     if (val === undefined || val === null || val === 0) return '-';
@@ -104,6 +109,23 @@ function TicketsContent() {
         : a.nomor_layanan.localeCompare(b.nomor_layanan);
     });
   }, [tickets, sortOrder]);
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedStatus, selectedTeknisi, selectedJenis, sortOrder]);
+
+  // Paginated tickets for smooth rendering
+  const totalPages = React.useMemo(() => {
+    if (pageSize === 0) return 1;
+    return Math.max(1, Math.ceil(sortedTickets.length / pageSize));
+  }, [sortedTickets.length, pageSize]);
+
+  const paginatedTickets = React.useMemo(() => {
+    if (pageSize === 0) return sortedTickets;
+    const start = (currentPage - 1) * pageSize;
+    return sortedTickets.slice(start, start + pageSize);
+  }, [sortedTickets, currentPage, pageSize]);
 
   useEffect(() => {
     fetchTickets();
@@ -484,7 +506,7 @@ function TicketsContent() {
                   </td>
                 </tr>
               ) : (
-                sortedTickets.map((t) => {
+                paginatedTickets.map((t) => {
                   const isStock =
                     t.nama_customer.toUpperCase().includes('STOCK BCT') ||
                     t.nama_customer.toUpperCase().includes('GHITP');
@@ -816,6 +838,58 @@ function TicketsContent() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {sortedTickets.length > 0 && (
+          <div className="p-3 sm:p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-2">
+              <span>Menampilkan</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 font-bold focus:outline-hidden"
+              >
+                <option value={15}>15</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={0}>Semua</option>
+              </select>
+              <span>dari <strong>{sortedTickets.length}</strong> tiket</span>
+            </div>
+
+            {pageSize > 0 && totalPages > 1 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Prev</span>
+                </button>
+
+                <div className="px-2 font-bold text-slate-800 dark:text-slate-200">
+                  {currentPage} / {totalPages}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Confirmation Modal for Bulk Delete */}
