@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logActivity } from '@/lib/audit';
+import { ensureWhiteLabelTablesAndSeed, parseCustomData } from '@/lib/app-config';
 import { Ticket, AuditLog } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    ensureWhiteLabelTablesAndSeed(db);
     const { id } = await params;
 
     const stmt = db.prepare('SELECT * FROM tickets WHERE id = ? OR nomor_layanan = ?');
@@ -23,7 +25,8 @@ export async function GET(
       ...(rawTicket as unknown as Ticket),
       kelengkapan: typeof rawTicket.kelengkapan === 'string'
         ? JSON.parse(rawTicket.kelengkapan || '[]')
-        : (rawTicket.kelengkapan || [])
+        : (rawTicket.kelengkapan || []),
+      custom_data: parseCustomData(rawTicket.custom_data)
     };
 
     // Get audit logs for this ticket
@@ -52,6 +55,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    ensureWhiteLabelTablesAndSeed(db);
     const { id } = await params;
     const body = await request.json();
 
@@ -67,7 +71,8 @@ export async function PUT(
       ...(oldRaw as unknown as Ticket),
       kelengkapan: typeof oldRaw.kelengkapan === 'string'
         ? JSON.parse(oldRaw.kelengkapan || '[]')
-        : (oldRaw.kelengkapan || [])
+        : (oldRaw.kelengkapan || []),
+      custom_data: parseCustomData(oldRaw.custom_data)
     };
 
     // Calculate numeric fields
@@ -79,7 +84,6 @@ export async function PUT(
     const status = body.status || oldTicket.status;
     let tgl_diambil_customer = body.tgl_diambil_customer !== undefined ? body.tgl_diambil_customer : oldTicket.tgl_diambil_customer;
 
-    // Sesuai Section 4.3 Matrix: Jika status 'SELESAI & DIAMBIL' atau 'GAGAL', set default biaya_akhir & tgl_diambil jika belum ada
     if (status === 'SELESAI & DIAMBIL' || status === 'GAGAL SERVICE/GARANSI') {
       if (!biaya_akhir && estimasi_biaya > 0) {
         biaya_akhir = estimasi_biaya;
@@ -89,14 +93,19 @@ export async function PUT(
       }
     }
 
+    const mergedCustomData =
+      body.custom_data !== undefined
+        ? { ...(oldTicket.custom_data || {}), ...parseCustomData(body.custom_data) }
+        : (oldTicket.custom_data || {});
+
     const updatedData = {
       nomor_layanan: body.nomor_layanan || oldTicket.nomor_layanan,
       jenis_layanan: body.jenis_layanan || oldTicket.jenis_layanan,
       nama_customer: body.nama_customer || oldTicket.nama_customer,
-      no_hp: body.no_hp || oldTicket.no_hp,
+      no_hp: body.no_hp !== undefined ? body.no_hp : oldTicket.no_hp,
       jenis_barang: body.jenis_barang || oldTicket.jenis_barang,
       nama_barang: body.nama_barang || oldTicket.nama_barang,
-      serial_number: body.serial_number || oldTicket.serial_number,
+      serial_number: body.serial_number !== undefined ? body.serial_number : oldTicket.serial_number,
       keluhan: body.keluhan || oldTicket.keluhan,
       kelengkapan: JSON.stringify(body.kelengkapan !== undefined ? body.kelengkapan : oldTicket.kelengkapan),
       estimasi_selesai: body.estimasi_selesai !== undefined ? body.estimasi_selesai : oldTicket.estimasi_selesai,
@@ -114,6 +123,7 @@ export async function PUT(
       hasil_service_garansi: body.hasil_service_garansi !== undefined ? body.hasil_service_garansi : oldTicket.hasil_service_garansi,
       sn_baru: body.sn_baru !== undefined ? body.sn_baru : oldTicket.sn_baru,
       tgl_diambil_customer,
+      custom_data: JSON.stringify(mergedCustomData),
       updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19)
     };
 
@@ -159,6 +169,7 @@ export async function PUT(
         hasil_service_garansi = ?,
         sn_baru = ?,
         tgl_diambil_customer = ?,
+        custom_data = ?,
         updated_at = ?
       WHERE id = ?
     `);
@@ -188,11 +199,11 @@ export async function PUT(
       updatedData.hasil_service_garansi,
       updatedData.sn_baru,
       updatedData.tgl_diambil_customer,
+      updatedData.custom_data,
       updatedData.updated_at,
       id
     );
 
-    // Deteksi perbedaan untuk keterangan log
     const actor = body.actor || updatedData.teknisi || 'Teknisi';
     let action = 'UPDATE_DATA';
     let logDescription = `${actor} memperbarui data tiket [${updatedData.nomor_layanan}]`;

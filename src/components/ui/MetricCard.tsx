@@ -14,7 +14,6 @@ interface MetricCardProps {
 export function MetricCard({
   title,
   value,
-  subtitle,
   icon: Icon,
   colorScheme,
   onClick,

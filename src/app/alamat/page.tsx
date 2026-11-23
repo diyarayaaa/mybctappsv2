@@ -1,18 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Printer,
   Building2,
   Edit3,
   RotateCcw,
-  ExternalLink,
-  SlidersHorizontal,
-  Check,
-  Package,
-  MapPin,
-  Phone
+  ExternalLink
 } from 'lucide-react';
 import { MasterVendor } from '@/types';
 import { COMPANY_INFO } from '@/lib/constants';
@@ -27,7 +22,6 @@ export default function AlamatVendorPage() {
   const [namaPenerima, setNamaPenerima] = useState('');
   const [alamatLengkap, setAlamatLengkap] = useState('');
   const [kontakWa, setKontakWa] = useState('');
-  const [wilayah, setWilayah] = useState('BDG');
   const [isEditingCustom, setIsEditingCustom] = useState(false);
 
   // Filter view: 'all' (Berdampingan), 'small' (Hanya Kecil), 'large' (Hanya Besar)
@@ -36,11 +30,17 @@ export default function AlamatVendorPage() {
   // Currently printing target (for single print)
   const [printTarget, setPrintTarget] = useState<'small' | 'large' | 'all'>('all');
 
-  useEffect(() => {
-    fetchVendors();
+  const applyVendorData = useCallback((v: MasterVendor) => {
+    const shortName = v.nama_vendor
+      .replace(/^(PT\.|CV\.|TOKO|SERVICE CENTER)\s+/i, '')
+      .trim();
+    setHeaderTitle(shortName || v.nama_vendor);
+    setNamaPenerima(v.nama_vendor);
+    setAlamatLengkap(v.alamat_lengkap || '');
+    setKontakWa(v.kontak_wa || '');
   }, []);
 
-  const fetchVendors = async () => {
+  const fetchVendors = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await fetch('/api/master/vendors');
@@ -49,7 +49,6 @@ export default function AlamatVendorPage() {
       setVendors(list);
 
       if (list.length > 0) {
-        // Select first vendor by default (e.g. Q-CHOX or first)
         setSelectedVendorId(String(list[0].id));
         applyVendorData(list[0]);
       }
@@ -58,18 +57,11 @@ export default function AlamatVendorPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [applyVendorData]);
 
-  const applyVendorData = (v: MasterVendor) => {
-    const shortName = v.nama_vendor
-      .replace(/^(PT\.|CV\.|TOKO|SERVICE CENTER)\s+/i, '')
-      .trim();
-    setHeaderTitle(shortName || v.nama_vendor);
-    setNamaPenerima(v.nama_vendor);
-    setAlamatLengkap(v.alamat_lengkap || '');
-    setKontakWa(v.kontak_wa || '');
-    setWilayah(v.wilayah || 'BDG');
-  };
+  useEffect(() => {
+    fetchVendors();
+  }, [fetchVendors]);
 
   const handleVendorChange = (vId: string) => {
     setSelectedVendorId(vId);

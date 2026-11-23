@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   JenisLayanan,
@@ -11,17 +11,10 @@ import {
   MasterVendor,
   MasterKeluhan
 } from '@/types';
-import {
-  TEKNISI_LIST,
-  JENIS_BARANG_LIST,
-  KELENGKAPAN_MAP,
-  STATUS_LIST_GARANSI,
-  STATUS_LIST_SERVICE
-} from '@/lib/constants';
+import { KELENGKAPAN_MAP } from '@/lib/constants';
 import {
   Save,
   Wrench,
-  ShieldAlert,
   FileText,
   Calendar,
   DollarSign,
@@ -35,13 +28,15 @@ import {
   Eye,
   ChevronRight,
   Phone,
-  X
+  X,
+  SlidersHorizontal
 } from 'lucide-react';
 import Link from 'next/link';
 import { AppSheetEnumList } from '@/components/forms/AppSheetEnumList';
 import { CustomerSearchModal, CustomerSummary } from '@/components/forms/CustomerSearchModal';
 import { CustomerHistoryModal, CustomerTicketHistory } from '@/components/forms/CustomerHistoryModal';
 import { formatDateIndo } from '@/lib/whatsapp-formatter';
+import { useAppConfig } from '@/components/config/AppConfigProvider';
 
 interface DynamicTicketFormProps {
   initialData?: Partial<Ticket>;
@@ -53,11 +48,31 @@ export function DynamicTicketForm({
   isEditMode = false
 }: DynamicTicketFormProps) {
   const router = useRouter();
+  const { config, getFieldLabel, isFieldVisible, isFieldRequired } = useAppConfig();
+
+  const jenisBarangOptions = config.presets.jenisBarang.length > 0 ? config.presets.jenisBarang : ['Laptop', 'PC', 'Other'];
+  const jenisLayananOptions = config.presets.jenisLayanan.length > 0 ? config.presets.jenisLayanan : ['SERVICE', 'GARANSI'];
+  const teknisiOptions = config.presets.teknisi.length > 0 ? config.presets.teknisi : ['Wandi', 'Satryo', 'Derida', 'Anzar'];
+  const statusServiceOptions = config.presets.statusService.length > 0 ? config.presets.statusService : ['PROSES SERVICE', 'SELESAI & DIAMBIL'];
+  const statusGaransiOptions = config.presets.statusGaransi.length > 0 ? config.presets.statusGaransi : ['PROSES GARANSI', 'SELESAI & DIAMBIL'];
+
+  // Dynamic Custom Fields (non-builtin)
+  const visibleCustomFields = useMemo(() => {
+    return [...config.fields]
+      .filter((f) => !f.is_builtin && f.is_visible_in_form)
+      .sort((a, b) => a.sort_order - b.sort_order);
+  }, [config.fields]);
+
+  const [customData, setCustomData] = useState<Record<string, string | number | null>>(
+    initialData?.custom_data || {}
+  );
 
   // Basic Details
   const [nomorLayanan, setNomorLayanan] = useState(initialData?.nomor_layanan || '');
   const [isAutoNumberLoading, setIsAutoNumberLoading] = useState(!initialData?.nomor_layanan);
-  const [jenisLayanan, setJenisLayanan] = useState<JenisLayanan>(initialData?.jenis_layanan || 'SERVICE');
+  const [jenisLayanan, setJenisLayanan] = useState<JenisLayanan>(
+    initialData?.jenis_layanan || jenisLayananOptions[0] || 'SERVICE'
+  );
 
   // Customer
   const [namaCustomer, setNamaCustomer] = useState(
@@ -82,7 +97,9 @@ export function DynamicTicketForm({
   const phoneDropdownRef = useRef<HTMLDivElement>(null);
 
   // Device
-  const [jenisBarang, setJenisBarang] = useState<JenisBarang>(initialData?.jenis_barang || 'Laptop');
+  const [jenisBarang, setJenisBarang] = useState<JenisBarang>(
+    initialData?.jenis_barang || jenisBarangOptions[0] || 'Laptop'
+  );
   const [namaBarang, setNamaBarang] = useState(initialData?.nama_barang || '');
   const [serialNumber, setSerialNumber] = useState(initialData?.serial_number || '');
   const [keluhan, setKeluhan] = useState(initialData?.keluhan || '');
@@ -100,9 +117,9 @@ export function DynamicTicketForm({
   const [estimasiSelesai, setEstimasiSelesai] = useState(initialData?.estimasi_selesai || '');
 
   // Assignment & Status
-  const [teknisi, setTeknisi] = useState(initialData?.teknisi || 'Wandi');
+  const [teknisi, setTeknisi] = useState(initialData?.teknisi || teknisiOptions[0] || 'Wandi');
   const [status, setStatus] = useState<StatusTiket>(
-    initialData?.status ?? (initialData?.jenis_layanan === 'GARANSI' ? ('' as StatusTiket) : 'PROSES SERVICE')
+    initialData?.status ?? (initialData?.jenis_layanan === 'GARANSI' ? ('' as StatusTiket) : (statusServiceOptions[0] || 'PROSES SERVICE'))
   );
   const [catatan, setCatatan] = useState(initialData?.catatan || '');
 
@@ -131,7 +148,6 @@ export function DynamicTicketForm({
   const [errorMessage, setErrorMessage] = useState('');
   const [customKelengkapanInput, setCustomKelengkapanInput] = useState('');
 
-  // Fetch next service number if creating new ticket
   useEffect(() => {
     if (!isEditMode && !nomorLayanan) {
       fetch('/api/tickets/next-number')
@@ -146,7 +162,6 @@ export function DynamicTicketForm({
     }
   }, [isEditMode, nomorLayanan]);
 
-  // Fetch Vendors & Keluhan list
   useEffect(() => {
     fetch('/api/master/vendors')
       .then((res) => res.json())
@@ -159,7 +174,6 @@ export function DynamicTicketForm({
       .catch((err) => console.error('Failed to fetch keluhan list:', err));
   }, []);
 
-  // Fetch Customer ticket history
   const fetchCustomerHistory = useCallback(async (nama: string, hp?: string) => {
     if (!nama && !hp) return;
     setIsLoadingHistory(true);
@@ -181,7 +195,6 @@ export function DynamicTicketForm({
     }
   }, []);
 
-  // Debounced search for Name autocomplete
   useEffect(() => {
     const clean = namaCustomer.replace(/^tn\/ny\.?\s*/i, '').trim();
     if (clean.length < 2) {
@@ -209,7 +222,6 @@ export function DynamicTicketForm({
     return () => clearTimeout(timer);
   }, [namaCustomer]);
 
-  // Debounced search for Phone autocomplete
   useEffect(() => {
     const clean = noHp.trim();
     if (clean.length < 3) {
@@ -237,7 +249,6 @@ export function DynamicTicketForm({
     return () => clearTimeout(timer);
   }, [noHp]);
 
-  // Click outside listener for dropdowns
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (nameDropdownRef.current && !nameDropdownRef.current.contains(e.target as Node)) {
@@ -251,7 +262,6 @@ export function DynamicTicketForm({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Auto-detect existing customer if initialData is provided
   useEffect(() => {
     if (initialData?.nama_customer && initialData.nama_customer !== 'TN/NY. ') {
       fetch(`/api/customers/search?q=${encodeURIComponent(initialData.nama_customer)}`)
@@ -283,7 +293,7 @@ export function DynamicTicketForm({
   };
 
   const handleSelectDeviceFromHistory = (newJenis: string, newNama: string) => {
-    if (newJenis && JENIS_BARANG_LIST.includes(newJenis as JenisBarang)) {
+    if (newJenis && jenisBarangOptions.includes(newJenis)) {
       handleJenisBarangChange(newJenis as JenisBarang);
     }
     if (newNama) {
@@ -296,7 +306,7 @@ export function DynamicTicketForm({
     if (!isEditMode) {
       if (newJenis === 'Laptop') setKelengkapan(['Unit', 'Charger']);
       else if (newJenis === 'PC') setKelengkapan(['Dus', 'PSU', 'Tutup case full']);
-      else setKelengkapan(['Fulldus', 'Unit Saja']);
+      else setKelengkapan(['Unit Saja']);
     }
   };
 
@@ -325,30 +335,45 @@ export function DynamicTicketForm({
     setErrorMessage('');
 
     if (!namaCustomer.trim()) {
-      setErrorMessage('Nama Customer wajib diisi');
+      setErrorMessage(`${getFieldLabel('nama_customer', 'Nama Customer')} wajib diisi`);
       return;
     }
-    if (!namaBarang.trim()) {
-      setErrorMessage('Nama Barang / Perangkat wajib diisi');
+    if (isFieldVisible('no_hp') && isFieldRequired('no_hp', false) && !noHp.trim()) {
+      setErrorMessage(`${getFieldLabel('no_hp', 'No HP')} wajib diisi`);
       return;
     }
-    if (!serialNumber.trim()) {
-      setErrorMessage('Serial Number wajib diisi');
+    if (isFieldVisible('nama_barang') && isFieldRequired('nama_barang', true) && !namaBarang.trim()) {
+      setErrorMessage(`${getFieldLabel('nama_barang', 'Nama Barang')} wajib diisi`);
       return;
     }
-    if (!keluhan.trim()) {
-      setErrorMessage('Keluhan kerusakan wajib diisi');
+    if (isFieldVisible('serial_number') && isFieldRequired('serial_number', true) && !serialNumber.trim()) {
+      setErrorMessage(`${getFieldLabel('serial_number', 'Serial Number')} wajib diisi`);
       return;
     }
-    if (isGaransiOrAlih && isGantiBaru && !snBaru.trim()) {
-      setErrorMessage('Serial Number Baru (SN Baru) wajib diisi untuk hasil garansi Diganti baru');
+    if (isFieldVisible('keluhan') && isFieldRequired('keluhan', true) && !keluhan.trim()) {
+      setErrorMessage(`${getFieldLabel('keluhan', 'Keluhan')} wajib diisi`);
       return;
+    }
+    if (isGaransiOrAlih && isGantiBaru && isFieldVisible('sn_baru') && !snBaru.trim()) {
+      setErrorMessage(`${getFieldLabel('sn_baru', 'SN Baru')} wajib diisi untuk hasil garansi Diganti baru`);
+      return;
+    }
+
+    // Validate required custom fields
+    for (const cf of visibleCustomFields) {
+      if (cf.is_required) {
+        const val = customData[cf.field_key];
+        if (val === undefined || val === null || String(val).trim() === '') {
+          setErrorMessage(`Field "${cf.label}" wajib diisi`);
+          return;
+        }
+      }
     }
 
     setIsSubmitting(true);
 
     try {
-      const activeActor = localStorage.getItem('bct_current_user') || teknisi || 'Wandi';
+      const activeActor = localStorage.getItem('bct_current_user') || teknisi || 'Admin';
 
       const payload = {
         nomor_layanan: nomorLayanan.trim(),
@@ -375,6 +400,7 @@ export function DynamicTicketForm({
         hasil_service_garansi: isGaransiOrAlih ? (hasilServiceGaransi || null) : null,
         sn_baru: isGaransiOrAlih && isGantiBaru ? (snBaru.trim() || null) : null,
         tgl_diambil_customer: isSelesaiDiambil ? (tglDiambilCustomer || new Date().toISOString().replace('T', ' ').slice(0, 19)) : null,
+        custom_data: customData,
         actor: activeActor
       };
 
@@ -405,7 +431,11 @@ export function DynamicTicketForm({
     }
   };
 
-  const currentKelengkapanOptions = KELENGKAPAN_MAP[jenisBarang] || KELENGKAPAN_MAP['Other'];
+  const currentKelengkapanOptions = useMemo(() => {
+    const fromMap = KELENGKAPAN_MAP[jenisBarang] || [];
+    const merged = Array.from(new Set([...fromMap, ...(config.presets.kelengkapanUmum || [])]));
+    return merged.length > 0 ? merged : ['Unit', 'Charger', 'Dus'];
+  }, [jenisBarang, config.presets.kelengkapanUmum]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8 max-w-5xl mx-auto pb-12">
@@ -427,8 +457,8 @@ export function DynamicTicketForm({
 
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 shadow-lg shadow-blue-600/25 rounded-xl transition-all disabled:opacity-50"
+          disabled={isSubmitting || isAutoNumberLoading}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-brand hover:bg-brand-hover active:scale-95 shadow-lg rounded-xl transition-all disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
           <span>{isSubmitting ? 'Menyimpan...' : isEditMode ? 'Simpan Perubahan' : 'Simpan Tiket'}</span>
@@ -446,57 +476,66 @@ export function DynamicTicketForm({
       {/* Section 1: Kategori & No Layanan */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <Wrench className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <Wrench className="w-5 h-5 text-brand" />
           <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
             1. Jenis Layanan & Penomoran
           </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-          {/* Jenis Layanan Tabs */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-              Jenis Layanan *
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setJenisLayanan('SERVICE');
-                  if (!STATUS_LIST_SERVICE.includes(status)) setStatus('PROSES SERVICE');
-                }}
-                className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border ${
-                  jenisLayanan === 'SERVICE'
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
-                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                SERVICE REGULER
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setJenisLayanan('GARANSI');
-                  if (!STATUS_LIST_GARANSI.includes(status)) setStatus('' as StatusTiket);
-                }}
-                className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border ${
-                  jenisLayanan === 'GARANSI'
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
-                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                KLAIM GARANSI
-              </button>
+          {/* Jenis Layanan */}
+          {isFieldVisible('jenis_layanan') && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                {getFieldLabel('jenis_layanan', 'Jenis Layanan')} {isFieldRequired('jenis_layanan', true) ? '*' : ''}
+              </label>
+              {jenisLayananOptions.length <= 2 ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {jenisLayananOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setJenisLayanan(opt);
+                        if (opt === 'GARANSI' && !statusGaransiOptions.includes(status)) {
+                          setStatus('' as StatusTiket);
+                        } else if (opt !== 'GARANSI' && !statusServiceOptions.includes(status)) {
+                          setStatus((statusServiceOptions[0] || 'PROSES SERVICE') as StatusTiket);
+                        }
+                      }}
+                      className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all border ${
+                        jenisLayanan === opt
+                          ? 'bg-brand text-white border-transparent shadow-md'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <select
+                  value={jenisLayanan}
+                  onChange={(e) => setJenisLayanan(e.target.value)}
+                  className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700"
+                >
+                  {jenisLayananOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
-          </div>
+          )}
 
           {/* Nomor Layanan */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Nomor Layanan (RMA) *
+                {getFieldLabel('nomor_layanan', 'Nomor Layanan (RMA)')} *
               </label>
-              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] text-brand font-semibold bg-brand-soft px-1.5 py-0.5 rounded">
                 Bisa diedit
               </span>
             </div>
@@ -509,22 +548,24 @@ export function DynamicTicketForm({
           </div>
 
           {/* Teknisi */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-              Teknisi Penanggung Jawab *
-            </label>
-            <select
-              value={teknisi}
-              onChange={(e) => setTeknisi(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-            >
-              {TEKNISI_LIST.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
+          {isFieldVisible('teknisi') && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                {getFieldLabel('teknisi', 'Teknisi Penanggung Jawab')} {isFieldRequired('teknisi', true) ? '*' : ''}
+              </label>
+              <select
+                value={teknisi}
+                onChange={(e) => setTeknisi(e.target.value)}
+                className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+              >
+                {teknisiOptions.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -532,7 +573,7 @@ export function DynamicTicketForm({
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <Users className="w-5 h-5 text-brand" />
             <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
               2. Informasi Pelanggan
             </h2>
@@ -542,7 +583,7 @@ export function DynamicTicketForm({
             <button
               type="button"
               onClick={() => setIsSearchModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 rounded-xl active:scale-95 transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-brand bg-brand-soft hover:opacity-90 border border-brand rounded-xl active:scale-95 transition-all shadow-xs"
               title="Buka buku kontak & riwayat pelanggan lama"
             >
               <Search className="w-3.5 h-3.5" />
@@ -552,11 +593,11 @@ export function DynamicTicketForm({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-          {/* Nama Customer with Live Autocomplete */}
+          {/* Nama Customer */}
           <div className="relative" ref={nameDropdownRef}>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Nama Customer *
+                {getFieldLabel('nama_customer', 'Nama Customer')} *
               </label>
               <div className="flex gap-1.5">
                 <button
@@ -569,14 +610,14 @@ export function DynamicTicketForm({
                         if (d.customers?.[0]) handleSelectCustomer(d.customers[0]);
                       });
                   }}
-                  className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/70 rounded active:scale-95 transition-all"
+                  className="text-[10px] font-bold px-2 py-0.5 bg-brand-soft text-brand border border-brand rounded active:scale-95 transition-all"
                 >
-                  + STOCK BCT
+                  + STOCK
                 </button>
                 <button
                   type="button"
                   onClick={() => setNamaCustomer('TN/NY. ')}
-                  className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/70 rounded active:scale-95 transition-all"
+                  className="text-[10px] font-bold px-2 py-0.5 bg-brand-soft text-brand border border-brand rounded active:scale-95 transition-all"
                 >
                   TN/NY.
                 </button>
@@ -594,13 +635,12 @@ export function DynamicTicketForm({
               className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden transition-all"
             />
 
-            {/* Dropdown Suggestions for Name */}
             {showNameDropdown && nameSuggestions.length > 0 && (
               <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1">
                 <div className="px-3.5 py-2 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   <span className="flex items-center gap-1.5">
-                    <History className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    Riwayat Pelanggan BCT
+                    <History className="w-3.5 h-3.5 text-brand" />
+                    Riwayat Pelanggan
                   </span>
                   <span className="text-[10px] font-normal normal-case text-slate-400">
                     Klik untuk auto-fill
@@ -616,7 +656,7 @@ export function DynamicTicketForm({
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
+                          <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
                             {item.nama_customer}
                           </span>
                           <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 shrink-0">
@@ -635,7 +675,7 @@ export function DynamicTicketForm({
                           )}
                         </div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                      <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
                     </button>
                   ))}
                 </div>
@@ -643,85 +683,76 @@ export function DynamicTicketForm({
             )}
           </div>
 
-          {/* Nomor WhatsApp with Live Autocomplete */}
-          <div className="relative" ref={phoneDropdownRef}>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Nomor WhatsApp / HP *
-              </label>
-              <span className="text-[10px] text-slate-400">
-                Ketik nomor untuk cari riwayat
-              </span>
+          {/* Nomor WhatsApp */}
+          {isFieldVisible('no_hp') && (
+            <div className="relative" ref={phoneDropdownRef}>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  {getFieldLabel('no_hp', 'Nomor WhatsApp / HP')} {isFieldRequired('no_hp', false) ? '*' : ''}
+                </label>
+                <span className="text-[10px] text-slate-400">Ketik nomor untuk cari riwayat</span>
+              </div>
+
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={noHp}
+                onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
+                onFocus={() => {
+                  if (phoneSuggestions.length > 0) setShowPhoneDropdown(true);
+                }}
+                placeholder="Contoh: 08123456789"
+                className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden transition-all"
+              />
+
+              {showPhoneDropdown && phoneSuggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1">
+                  <div className="px-3.5 py-2 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    <span className="flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-brand" />
+                      Nomor Terdaftar
+                    </span>
+                    <span className="text-[10px] font-normal normal-case text-slate-400">Klik untuk auto-fill</span>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                    {phoneSuggestions.map((item, idx) => (
+                      <button
+                        key={`phone-sugg-${idx}`}
+                        type="button"
+                        onClick={() => handleSelectCustomer(item)}
+                        className="w-full text-left p-3 hover:bg-blue-50/80 dark:hover:bg-blue-950/40 transition-colors flex items-center justify-between gap-3 group"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm font-mono font-bold text-brand">
+                              {item.no_hp}
+                            </span>
+                            <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                              ({item.nama_customer})
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5 truncate">
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                              {item.total_servis}x servis
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={noHp}
-onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
-              onFocus={() => {
-                if (phoneSuggestions.length > 0) setShowPhoneDropdown(true);
-              }}
-              placeholder="Contoh: 08123456789"
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden transition-all"
-            />
-
-            {/* Dropdown Suggestions for Phone */}
-            {showPhoneDropdown && phoneSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1">
-                <div className="px-3.5 py-2 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  <span className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    Nomor Terdaftar di Database
-                  </span>
-                  <span className="text-[10px] font-normal normal-case text-slate-400">
-                    Klik untuk auto-fill
-                  </span>
-                </div>
-                <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                  {phoneSuggestions.map((item, idx) => (
-                    <button
-                      key={`phone-sugg-${idx}`}
-                      type="button"
-                      onClick={() => handleSelectCustomer(item)}
-                      className="w-full text-left p-3 hover:bg-blue-50/80 dark:hover:bg-blue-950/40 transition-colors flex items-center justify-between gap-3 group"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-mono font-bold text-blue-600 dark:text-blue-400">
-                            {item.no_hp}
-                          </span>
-                          <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                            ({item.nama_customer})
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5 truncate">
-                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                            {item.total_servis}x servis
-                          </span>
-                          {item.barang_terakhir && (
-                            <>
-                              <span>•</span>
-                              <span className="truncate">Terakhir: {item.barang_terakhir}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Returning Customer Badge / Historical Status Card */}
+        {/* Returning Customer Badge */}
         {selectedCustomer && (
-          <div className="mt-4 p-3.5 sm:p-4 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-linear-to-r from-blue-50/90 via-indigo-50/50 to-slate-50 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1 shadow-xs">
+          <div className="mt-4 p-3.5 sm:p-4 rounded-xl border border-brand bg-brand-soft flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1 shadow-xs">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-blue-500/25 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-brand text-white flex items-center justify-center font-bold text-sm shadow-md shrink-0">
                 <History className="w-5 h-5" />
               </div>
               <div className="min-w-0">
@@ -730,7 +761,7 @@ onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
                     Pelanggan Terdaftar
                   </span>
                   <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                    {selectedCustomer.total_servis}x Servis di Best Computel
+                    {selectedCustomer.total_servis}x Servis di {config.branding.appName}
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 truncate">
@@ -754,7 +785,7 @@ onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
                   fetchCustomerHistory(selectedCustomer.nama_customer, selectedCustomer.no_hp);
                   setIsHistoryModalOpen(true);
                 }}
-                className="px-3.5 py-1.5 text-xs font-bold text-blue-700 dark:text-blue-300 bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 border border-blue-200 dark:border-blue-800 rounded-lg shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                className="px-3.5 py-1.5 text-xs font-bold text-brand bg-white dark:bg-slate-800 hover:opacity-90 border border-brand rounded-lg shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Lihat Riwayat ({selectedCustomer.total_servis} Tiket)</span>
@@ -776,209 +807,291 @@ onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
       {/* Section 3: Data Perangkat & Keluhan */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <FileText className="w-5 h-5 text-brand" />
           <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
             3. Informasi Perangkat, Keluhan & Kelengkapan
           </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-          {/* Jenis Barang */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-              Jenis Barang *
-            </label>
-            <select
-              value={jenisBarang}
-              onChange={(e) => handleJenisBarangChange(e.target.value as JenisBarang)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-            >
-              {JENIS_BARANG_LIST.map((jb) => (
-                <option key={jb} value={jb}>
-                  {jb}
-                </option>
-              ))}
-            </select>
-          </div>
+          {isFieldVisible('jenis_barang') && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                {getFieldLabel('jenis_barang', 'Jenis Barang')} {isFieldRequired('jenis_barang', true) ? '*' : ''}
+              </label>
+              <select
+                value={jenisBarang}
+                onChange={(e) => handleJenisBarangChange(e.target.value as JenisBarang)}
+                className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+              >
+                {jenisBarangOptions.map((jb) => (
+                  <option key={jb} value={jb}>
+                    {jb}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {/* Nama Barang */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-              Nama Barang / Model *
-            </label>
-            <input
-              type="text"
-              value={namaBarang}
-              onChange={(e) => setNamaBarang(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-            />
-          </div>
+          {isFieldVisible('nama_barang') && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                {getFieldLabel('nama_barang', 'Nama Barang / Model')} {isFieldRequired('nama_barang', true) ? '*' : ''}
+              </label>
+              <input
+                type="text"
+                value={namaBarang}
+                onChange={(e) => setNamaBarang(e.target.value)}
+                className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+              />
+            </div>
+          )}
 
-          {/* Serial Number */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-              Serial Number (SN) *
-            </label>
-            <input
-              type="text"
-              value={serialNumber}
-              onChange={(e) => setSerialNumber(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-mono font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-            />
-          </div>
+          {isFieldVisible('serial_number') && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                {getFieldLabel('serial_number', 'Serial Number (SN)')} {isFieldRequired('serial_number', true) ? '*' : ''}
+              </label>
+              <input
+                type="text"
+                value={serialNumber}
+                onChange={(e) => setSerialNumber(e.target.value)}
+                className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-mono font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+              />
+            </div>
+          )}
         </div>
 
-        {/* Keluhan Kerusakan (AppSheet EnumList Dropdown) */}
-        <AppSheetEnumList
-          label="Keluhan Kerusakan"
-          selectedValues={selectedKeluhan}
-          options={keluhanList}
-          onChange={(newValues) => {
-            setSelectedKeluhan(newValues);
-            setKeluhan(newValues.join(', '));
-          }}
-          onAddNewOption={async (newText) => {
-            try {
-              const res = await fetch('/api/master/keluhan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ teks_keluhan: newText })
-              });
-              const data = await res.json();
-              if (!data.error) {
-                const listRes = await fetch('/api/master/keluhan');
-                const listData = await listRes.json();
-                if (listData.keluhan) {
-                  setKeluhanList(listData.keluhan);
+        {/* Keluhan Kerusakan */}
+        {isFieldVisible('keluhan') && (
+          <AppSheetEnumList
+            label={getFieldLabel('keluhan', 'Keluhan Kerusakan')}
+            selectedValues={selectedKeluhan}
+            options={keluhanList}
+            onChange={(newValues) => {
+              setSelectedKeluhan(newValues);
+              setKeluhan(newValues.join(', '));
+            }}
+            onAddNewOption={async (newText) => {
+              try {
+                const res = await fetch('/api/master/keluhan', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ teks_keluhan: newText })
+                });
+                const data = await res.json();
+                if (!data.error) {
+                  const listRes = await fetch('/api/master/keluhan');
+                  const listData = await listRes.json();
+                  if (listData.keluhan) {
+                    setKeluhanList(listData.keluhan);
+                  }
                 }
+              } catch (err) {
+                console.error('Failed to save custom keluhan to master:', err);
               }
-            } catch (err) {
-              console.error('Failed to save custom keluhan to master:', err);
-            }
-          }}
-          required
-          placeholder="Pilih atau cari keluhan kerusakan..."
-        />
+            }}
+            required={isFieldRequired('keluhan', true)}
+            placeholder="Pilih atau cari keluhan kerusakan..."
+          />
+        )}
 
         {/* Dynamic Kelengkapan Checklist */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Kelengkapan Dititipkan ({jenisBarang})
+        {isFieldVisible('kelengkapan') && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                {getFieldLabel('kelengkapan', 'Kelengkapan Dititipkan')} ({jenisBarang})
+              </label>
+              <span className="text-[11px] text-slate-400">Klik untuk memilih</span>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
+              {currentKelengkapanOptions.map((opt) => {
+                const isSelected = kelengkapan.includes(opt);
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => toggleKelengkapan(opt)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-brand text-white border-transparent shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                    <span>{opt}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customKelengkapanInput}
+                onChange={(e) => setCustomKelengkapanInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddCustomKelengkapan();
+                  }
+                }}
+                placeholder="Tambah kelengkapan lain..."
+                className="flex-1 px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg border border-slate-300 dark:border-slate-700 focus:outline-hidden"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomKelengkapan}
+                className="px-3 py-1.5 text-xs font-bold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 rounded-lg transition-colors"
+              >
+                + Tambah
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Catatan Tambahan */}
+        {isFieldVisible('catatan') && (
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+              {getFieldLabel('catatan', 'Catatan Khusus / Password / PIN Perangkat')} {isFieldRequired('catatan', false) ? '*' : ''}
             </label>
-            <span className="text-[11px] text-slate-400">Klik untuk memilih</span>
+            <input
+              type="text"
+              value={catatan}
+              onChange={(e) => setCatatan(e.target.value)}
+              className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Dynamic Custom Fields Section (Added by Admin via White-Label Form Builder) */}
+      {visibleCustomFields.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <SlidersHorizontal className="w-5 h-5 text-brand" />
+            <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              Informasi Tambahan (Custom Fields)
+            </h2>
           </div>
 
-          <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
-            {currentKelengkapanOptions.map((opt) => {
-              const isSelected = kelengkapan.includes(opt);
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+            {visibleCustomFields.map((cf) => {
+              const val = customData[cf.field_key] ?? '';
               return (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => toggleKelengkapan(opt)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
-                    isSelected
-                      ? 'bg-slate-900 dark:bg-blue-500 text-white border-slate-900 dark:border-blue-500 shadow-xs'
-                      : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  {isSelected && <Check className="w-3.5 h-3.5 text-blue-400 dark:text-white" />}
-                  <span>{opt}</span>
-                </button>
+                <div key={cf.field_key} className={cf.field_type === 'textarea' ? 'md:col-span-2' : ''}>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                    {cf.label} {cf.is_required ? '*' : ''}
+                  </label>
+
+                  {cf.field_type === 'select' ? (
+                    <select
+                      value={String(val)}
+                      required={cf.is_required}
+                      onChange={(e) =>
+                        setCustomData((prev) => ({ ...prev, [cf.field_key]: e.target.value }))
+                      }
+                      className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                    >
+                      <option value="">-- Pilih {cf.label} --</option>
+                      {(cf.options || []).map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  ) : cf.field_type === 'textarea' ? (
+                    <textarea
+                      rows={3}
+                      value={String(val)}
+                      required={cf.is_required}
+                      placeholder={cf.placeholder}
+                      onChange={(e) =>
+                        setCustomData((prev) => ({ ...prev, [cf.field_key]: e.target.value }))
+                      }
+                      className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                    />
+                  ) : (
+                    <input
+                      type={cf.field_type === 'number' ? 'number' : cf.field_type === 'date' ? 'date' : 'text'}
+                      value={String(val)}
+                      required={cf.is_required}
+                      placeholder={cf.placeholder}
+                      onChange={(e) =>
+                        setCustomData((prev) => ({
+                          ...prev,
+                          [cf.field_key]: cf.field_type === 'number' ? Number(e.target.value) : e.target.value
+                        }))
+                      }
+                      className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                    />
+                  )}
+                </div>
               );
             })}
           </div>
-
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={customKelengkapanInput}
-              onChange={(e) => setCustomKelengkapanInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddCustomKelengkapan();
-                }
-              }}
-              className="flex-1 px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg border border-slate-300 dark:border-slate-700 focus:outline-hidden"
-            />
-            <button
-              type="button"
-              onClick={handleAddCustomKelengkapan}
-              className="px-3 py-1.5 text-xs font-bold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 rounded-lg transition-colors"
-            >
-              + Tambah
-            </button>
-          </div>
         </div>
-
-        {/* Catatan Tambahan */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-            Catatan Khusus / Password / PIN Perangkat
-          </label>
-          <input
-            type="text"
-            value={catatan}
-            onChange={(e) => setCatatan(e.target.value)}
-            className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-          />
-        </div>
-      </div>
+      )}
 
       {/* Section 4: Status Pengerjaan & Estimasi */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-            4. Status Pengerjaan & Estimasi Waktu
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-          {/* Status Tiket */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-              Status Pengerjaan Saat Ini *
-            </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as StatusTiket)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-            >
-              {jenisLayanan === 'GARANSI' && (
-                <option value="">-- Belum Ada Status (Kosong) --</option>
-              )}
-              {(jenisLayanan === 'GARANSI' ? STATUS_LIST_GARANSI : STATUS_LIST_SERVICE).map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+      {(isFieldVisible('status') || isFieldVisible('estimasi_selesai')) && (
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <Calendar className="w-5 h-5 text-brand" />
+            <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              4. Status Pengerjaan & Estimasi Waktu
+            </h2>
           </div>
 
-          {/* Estimasi Selesai */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-              Estimasi Selesai
-            </label>
-            <input
-              type="date"
-              value={estimasiSelesai}
-              onChange={(e) => setEstimasiSelesai(e.target.value)}
-              className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+            {isFieldVisible('status') && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                  {getFieldLabel('status', 'Status Pengerjaan Saat Ini')} {isFieldRequired('status', true) ? '*' : ''}
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as StatusTiket)}
+                  className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                >
+                  {jenisLayanan === 'GARANSI' && (
+                    <option value="">-- Belum Ada Status (Kosong) --</option>
+                  )}
+                  {(jenisLayanan === 'GARANSI' ? statusGaransiOptions : statusServiceOptions).map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {isFieldVisible('estimasi_selesai') && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                  {getFieldLabel('estimasi_selesai', 'Estimasi Selesai')}
+                </label>
+                <input
+                  type="date"
+                  value={estimasiSelesai}
+                  onChange={(e) => setEstimasiSelesai(e.target.value)}
+                  className="w-full px-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                />
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Section 5: Matrix Kondisional Garansi & Alih Servis */}
       {isGaransiOrAlih && (
         <div className="bg-blue-50/50 dark:bg-blue-950/20 p-4 sm:p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-800 shadow-sm space-y-4 sm:space-y-5 animate-in fade-in">
           <div className="flex items-center justify-between pb-3 border-b border-blue-200 dark:border-blue-800">
             <div className="flex items-center gap-2">
-              <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <Truck className="w-5 h-5 text-brand" />
               <h2 className="text-xs sm:text-sm font-bold text-blue-950 dark:text-blue-200 uppercase tracking-wider">
                 5. Alur Logistik Vendor & Klaim Garansi
               </h2>
@@ -989,89 +1102,95 @@ onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-            {/* Vendor */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Distributor / Vendor *
-              </label>
-              <select
-                value={distributorVendor}
-                onChange={(e) => setDistributorVendor(e.target.value)}
-                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-              >
-                <option value="">-- Pilih Vendor --</option>
-                {vendors.map((v) => (
-                  <option key={v.id} value={v.nama_vendor}>
-                    {v.nama_vendor} ({v.wilayah})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {isFieldVisible('distributor_vendor') && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                  {getFieldLabel('distributor_vendor', 'Distributor / Vendor')}
+                </label>
+                <select
+                  value={distributorVendor}
+                  onChange={(e) => setDistributorVendor(e.target.value)}
+                  className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                >
+                  <option value="">-- Pilih Vendor --</option>
+                  {vendors.map((v) => (
+                    <option key={v.id} value={v.nama_vendor}>
+                      {v.nama_vendor} ({v.wilayah})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-            {/* No Surat Jalan */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                No. Surat Jalan
-              </label>
-              <input
-                type="text"
-                value={noSuratJalan}
-                onChange={(e) => setNoSuratJalan(e.target.value)}
-                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-mono font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-              />
-            </div>
+            {isFieldVisible('no_surat_jalan') && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                  {getFieldLabel('no_surat_jalan', 'No. Surat Jalan')}
+                </label>
+                <input
+                  type="text"
+                  value={noSuratJalan}
+                  onChange={(e) => setNoSuratJalan(e.target.value)}
+                  className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-mono font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                />
+              </div>
+            )}
 
-            {/* Hasil Service */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Hasil Service / Garansi
-              </label>
-              <select
-                value={hasilServiceGaransi}
-                onChange={(e) => setHasilServiceGaransi(e.target.value as HasilServiceGaransi)}
-                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-              >
-                <option value="">-- Belum Ada Hasil --</option>
-                <option value="Diservice">Diservice (Unit Sama)</option>
-                <option value="Diganti baru">Diganti baru (Unit Baru)</option>
-              </select>
-            </div>
+            {isFieldVisible('hasil_service_garansi') && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                  {getFieldLabel('hasil_service_garansi', 'Hasil Service / Garansi')}
+                </label>
+                <select
+                  value={hasilServiceGaransi}
+                  onChange={(e) => setHasilServiceGaransi(e.target.value as HasilServiceGaransi)}
+                  className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                >
+                  <option value="">-- Belum Ada Hasil --</option>
+                  <option value="Diservice">Diservice (Unit Sama)</option>
+                  <option value="Diganti baru">Diganti baru (Unit Baru)</option>
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Tgl Kirim ke Vendor
-              </label>
-              <input
-                type="date"
-                value={tglKirimVendor}
-                onChange={(e) => setTglKirimVendor(e.target.value)}
-                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-              />
-            </div>
+            {isFieldVisible('tgl_kirim_vendor') && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                  {getFieldLabel('tgl_kirim_vendor', 'Tgl Kirim ke Vendor')}
+                </label>
+                <input
+                  type="date"
+                  value={tglKirimVendor}
+                  onChange={(e) => setTglKirimVendor(e.target.value)}
+                  className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                />
+              </div>
+            )}
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Tgl Datang dari Vendor
-              </label>
-              <input
-                type="date"
-                value={tglDatangVendor}
-                onChange={(e) => setTglDatangVendor(e.target.value)}
-                className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-              />
-            </div>
+            {isFieldVisible('tgl_datang_vendor') && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                  {getFieldLabel('tgl_datang_vendor', 'Tgl Datang dari Vendor')}
+                </label>
+                <input
+                  type="date"
+                  value={tglDatangVendor}
+                  onChange={(e) => setTglDatangVendor(e.target.value)}
+                  className="w-full px-3.5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                />
+              </div>
+            )}
           </div>
 
-          {/* Conditional Mandatory SN Baru */}
-          {isGantiBaru && (
+          {isGantiBaru && isFieldVisible('sn_baru') && (
             <div className="p-4 bg-blue-100 dark:bg-blue-950/60 rounded-xl border-2 border-blue-400 dark:border-blue-700 animate-in slide-in-from-top-2">
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-extrabold text-blue-950 dark:text-blue-200 uppercase tracking-wider">
-                  Serial Number Baru (SN Baru) * Wajib Diisi
+                  {getFieldLabel('sn_baru', 'Serial Number Baru (SN Baru)')} * Wajib Diisi
                 </label>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-500 text-white rounded">
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-brand text-white rounded">
                   Mandatory
                 </span>
               </div>
@@ -1087,98 +1206,106 @@ onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
       )}
 
       {/* Section 6: Keuangan & Pelunasan */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-            6. Rincian Keuangan
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-          {/* Estimasi Biaya */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-              Estimasi Biaya (Rp)
-            </label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
-              <input
-                type="number"
-                min="0"
-                step="1000"
-                value={estimasiBiaya}
-                onChange={(e) => setEstimasiBiaya(Number(e.target.value))}
-                className="w-full pl-10 pr-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-              />
-            </div>
+      {(isFieldVisible('estimasi_biaya') || isFieldVisible('dp') || isFieldVisible('sisa')) && (
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 sm:space-y-5 transition-colors">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <DollarSign className="w-5 h-5 text-brand" />
+            <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              6. Rincian Keuangan
+            </h2>
           </div>
 
-          {/* DP */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-              DP / Uang Muka (Rp)
-            </label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
-              <input
-                type="number"
-                min="0"
-                step="1000"
-                value={dp}
-                onChange={(e) => setDp(Number(e.target.value))}
-                className="w-full pl-10 pr-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-emerald-700 dark:text-emerald-400 rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
-              />
-            </div>
-          </div>
-
-          {/* Sisa */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-              Sisa Pembayaran (Auto)
-            </label>
-            <div className="px-3.5 py-2 sm:py-2.5 bg-blue-50/80 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 flex items-center justify-between">
-              <span className="text-xs font-bold text-blue-900 dark:text-blue-300">Sisa:</span>
-              <span className="text-sm sm:text-base font-extrabold text-blue-600 dark:text-blue-400">
-                Rp {sisaBiaya.toLocaleString('id-ID')}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Pelunasan if Selesai & Diambil */}
-        {isSelesaiDiambil && (
-          <div className="p-4 bg-slate-50 dark:bg-slate-800/70 rounded-xl border border-slate-300 dark:border-slate-700 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Biaya Akhir / Total Nota Pelunasan (Rp)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={biayaAkhir || estimasiBiaya}
-                  onChange={(e) => setBiayaAkhir(Number(e.target.value))}
-                  className="w-full pl-10 pr-3.5 py-2 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-hidden"
-                />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+            {isFieldVisible('estimasi_biaya') && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                  {getFieldLabel('estimasi_biaya', 'Estimasi Biaya (Rp)')}
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={estimasiBiaya}
+                    onChange={(e) => setEstimasiBiaya(Number(e.target.value))}
+                    className="w-full pl-10 pr-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Tanggal & Waktu Diambil Customer
-              </label>
-              <input
-                type="datetime-local"
-                value={tglDiambilCustomer ? tglDiambilCustomer.replace(' ', 'T').slice(0, 16) : ''}
-                onChange={(e) => setTglDiambilCustomer(e.target.value.replace('T', ' '))}
-                className="w-full px-3.5 py-2 bg-white dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-hidden"
-              />
-            </div>
+            {isFieldVisible('dp') && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                  {getFieldLabel('dp', 'DP / Uang Muka (Rp)')}
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={dp}
+                    onChange={(e) => setDp(Number(e.target.value))}
+                    className="w-full pl-10 pr-3.5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-emerald-700 dark:text-emerald-400 rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+            )}
+
+            {isFieldVisible('sisa') && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                  {getFieldLabel('sisa', 'Sisa Pembayaran (Auto)')}
+                </label>
+                <div className="px-3.5 py-2 sm:py-2.5 bg-brand-soft rounded-xl border border-brand flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Sisa:</span>
+                  <span className="text-sm sm:text-base font-extrabold text-brand">
+                    Rp {sisaBiaya.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+
+          {isSelesaiDiambil && (
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/70 rounded-xl border border-slate-300 dark:border-slate-700 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in">
+              {isFieldVisible('biaya_akhir') && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                    {getFieldLabel('biaya_akhir', 'Biaya Akhir / Total Nota Pelunasan (Rp)')}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={biayaAkhir || estimasiBiaya}
+                      onChange={(e) => setBiayaAkhir(Number(e.target.value))}
+                      className="w-full pl-10 pr-3.5 py-2 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {isFieldVisible('tgl_diambil_customer') && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                    {getFieldLabel('tgl_diambil_customer', 'Tanggal & Waktu Diambil Customer')}
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={tglDiambilCustomer ? tglDiambilCustomer.replace(' ', 'T').slice(0, 16) : ''}
+                    onChange={(e) => setTglDiambilCustomer(e.target.value.replace('T', ' '))}
+                    className="w-full px-3.5 py-2 bg-white dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-hidden"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Bottom Save Bar */}
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
@@ -1191,7 +1318,7 @@ onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex items-center gap-2 px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 shadow-lg shadow-blue-600/25 rounded-xl transition-all disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white bg-brand hover:bg-brand-hover active:scale-95 shadow-lg rounded-xl transition-all disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
           <span>{isSubmitting ? 'Menyimpan...' : isEditMode ? 'Simpan Perubahan' : 'Simpan Tiket'}</span>

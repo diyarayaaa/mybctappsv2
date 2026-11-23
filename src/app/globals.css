@@ -10,12 +10,33 @@
 :root {
   --primary-navy: #0f172a;
   --secondary-navy: #1e293b;
+  --brand-primary: #2563eb;
+  --brand-primary-hover: #1d4ed8;
+  --brand-primary-rgb: 37, 99, 235;
+  --brand-primary-soft: rgba(37, 99, 235, 0.14);
+  --brand-primary-border: rgba(37, 99, 235, 0.35);
   --accent-blue: #2563eb;
   --accent-blue-hover: #1d4ed8;
   --accent-cobalt: #2b4bee;
   --accent-orange: #2563eb;
   --accent-orange-hover: #1d4ed8;
   --bg-content: #f8fafc;
+}
+
+.bg-brand {
+  background-color: var(--brand-primary) !important;
+}
+.hover\:bg-brand-hover:hover {
+  background-color: var(--brand-primary-hover) !important;
+}
+.bg-brand-soft {
+  background-color: var(--brand-primary-soft) !important;
+}
+.text-brand {
+  color: var(--brand-primary) !important;
+}
+.border-brand {
+  border-color: var(--brand-primary-border) !important;
 }
 
 .dark {

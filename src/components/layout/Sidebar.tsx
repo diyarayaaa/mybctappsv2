@@ -1,97 +1,39 @@
 'use client';
 
-import React, { useState, useRef, useCallback, Suspense } from 'react';
+import React, { useState, useRef, useCallback, Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
-  LayoutDashboard,
-  PlusCircle,
-  ClipboardList,
-  Truck,
-  MessageSquare,
-  Database,
-  Users,
-  SlidersHorizontal,
-  Printer,
   HelpCircle,
   Settings,
   Pin,
   PinOff,
   X,
-  Boxes,
-  ShieldCheck,
   Wrench,
   Phone,
   Mail,
   Moon,
   Sun,
   Laptop,
-  BarChart3,
-  FileSpreadsheet
+  SlidersHorizontal
 } from 'lucide-react';
 import { useTheme } from '@/components/theme/ThemeProvider';
-
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useAppConfig } from '@/components/config/AppConfigProvider';
+import { getLucideIcon } from '@/lib/icon-registry';
 
-interface NavItem {
+interface DynamicNavItem {
+  key: string;
   name: string;
   href: string;
   icon: React.ElementType;
   adminOnly?: boolean;
 }
 
-interface NavGroup {
+interface DynamicNavGroup {
   groupName: string;
-  items: NavItem[];
+  items: DynamicNavItem[];
 }
-
-const NAVIGATION_GROUPS: NavGroup[] = [
-  {
-    groupName: 'UTAMA',
-    items: [
-      { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-      { name: 'Dashboard Statistik', href: '/statistik', icon: BarChart3, adminOnly: true }
-    ]
-  },
-  {
-    groupName: 'OPERASIONAL',
-    items: [
-      { name: 'Form Input Service', href: '/tickets/new', icon: PlusCircle },
-      { name: 'Daftar Service', href: '/tickets', icon: ClipboardList },
-      { name: 'Pengiriman Vendor', href: '/surat-jalan', icon: Truck },
-      { name: 'Portal Tracking Publik', href: '/tracking', icon: ShieldCheck }
-    ]
-  },
-  {
-    groupName: 'KOMUNIKASI',
-    items: [
-      { name: 'Laporan WA Mingguan', href: '/whatsapp', icon: MessageSquare },
-      { name: 'Laporan WA Garansi Stock', href: '/whatsapp?tab=sales', icon: Boxes },
-      { name: 'Laporan WA Customer', href: '/whatsapp?tab=quick', icon: Users }
-    ]
-  },
-  {
-    groupName: 'DATA MASTER',
-    items: [
-      { name: 'Data Master Vendor', href: '/master', icon: Database },
-      { name: 'Master Customer', href: '/master?tab=customer', icon: Users }
-    ]
-  },
-  {
-    groupName: 'ADMINISTRASI',
-    items: [
-      { name: 'Manajemen User', href: '/users', icon: ShieldCheck, adminOnly: true }
-    ]
-  },
-  {
-    groupName: 'PENGATURAN',
-    items: [
-      { name: 'Preset Form Option', href: '/master?tab=keluhan', icon: SlidersHorizontal },
-      { name: 'Backup Spreadsheet', href: '/master?tab=backup', icon: FileSpreadsheet },
-      { name: 'Cetak Alamat Vendor', href: '/alamat', icon: Printer }
-    ]
-  }
-];
 
 function SidebarNav() {
   const pathname = usePathname();
@@ -99,6 +41,7 @@ function SidebarNav() {
   const currentTab = searchParams ? searchParams.get('tab') : null;
 
   const { user } = useAuth();
+  const { config } = useAppConfig();
 
   const {
     isMobileSidebarOpen,
@@ -133,6 +76,54 @@ function SidebarNav() {
     }, 100);
   }, []);
 
+  // Build navigation groups dynamically from AppConfig feature toggles
+  const navigationGroups = useMemo<DynamicNavGroup[]>(() => {
+    const groupOrder = ['UTAMA', 'OPERASIONAL', 'KOMUNIKASI', 'DATA MASTER', 'ADMINISTRASI', 'PENGATURAN'];
+    const map = new Map<string, DynamicNavItem[]>();
+
+    for (const g of groupOrder) {
+      map.set(g, []);
+    }
+
+    const sortedFeatures = [...config.features].sort((a, b) => a.sort_order - b.sort_order);
+
+    for (const f of sortedFeatures) {
+      if (!f.is_enabled && f.feature_key !== 'dashboard') continue;
+      if (f.admin_only && user?.role !== 'ADMIN') continue;
+
+      const list = map.get(f.group_name) || [];
+      list.push({
+        key: f.feature_key,
+        name: f.custom_label || f.default_label,
+        href: f.href,
+        icon: getLucideIcon(f.icon),
+        adminOnly: f.admin_only
+      });
+      map.set(f.group_name, list);
+    }
+
+    // Always inject White-Label Settings for ADMIN only under ADMINISTRASI
+    if (user?.role === 'ADMIN') {
+      const adminGroup = map.get('ADMINISTRASI') || [];
+      adminGroup.push({
+        key: 'white_label_settings',
+        name: 'Custom Aplikasi',
+        href: '/settings/white-label',
+        icon: SlidersHorizontal,
+        adminOnly: true
+      });
+      map.set('ADMINISTRASI', adminGroup);
+    }
+
+    const groups: DynamicNavGroup[] = [];
+    map.forEach((items, groupName) => {
+      if (items.length > 0) {
+        groups.push({ groupName, items });
+      }
+    });
+    return groups;
+  }, [config.features, user?.role]);
+
   // If on login page, don't show sidebar
   if (pathname === '/login') return null;
 
@@ -144,62 +135,27 @@ function SidebarNav() {
     const targetParams = new URLSearchParams(targetQuery || '');
     const targetTab = targetParams.get('tab');
 
-    // 1. Dashboard
-    if (href === '/') {
-      return pathname === '/';
-    }
-
-    // 1b. Dashboard Statistik
-    if (href === '/statistik') {
-      return pathname === '/statistik' || pathname.startsWith('/statistik/');
-    }
-
-    // 2. Form Input Service (/tickets/new)
-    if (href === '/tickets/new') {
-      return pathname === '/tickets/new';
-    }
-
-    // 3. Daftar Service (/tickets) - must NOT match /tickets/new
+    if (href === '/') return pathname === '/';
+    if (href === '/statistik') return pathname === '/statistik' || pathname.startsWith('/statistik/');
+    if (href === '/settings/white-label') return pathname.startsWith('/settings/white-label');
+    if (href === '/tickets/new') return pathname === '/tickets/new';
     if (href === '/tickets') {
       return pathname === '/tickets' || (pathname.startsWith('/tickets/') && pathname !== '/tickets/new');
     }
-
-    // 4. Pengiriman Vendor (/surat-jalan)
     if (href === '/surat-jalan') {
       return (pathname === '/surat-jalan' && (!currentTab || currentTab !== 'cetak')) || (pathname.startsWith('/surat-jalan/') && !pathname.includes('print'));
     }
-
-    // 5. Cetak Alamat (/surat-jalan?tab=cetak)
-    if (href === '/surat-jalan?tab=cetak') {
-      return pathname === '/surat-jalan' && currentTab === 'cetak';
-    }
-
-    // 6. Laporan WhatsApp tabs (/whatsapp)
     if (targetPath === '/whatsapp') {
       if (pathname !== '/whatsapp') return false;
-      if (targetTab === 'sales') {
-        return currentTab === 'sales';
-      }
-      if (targetTab === 'quick') {
-        return currentTab === 'quick';
-      }
-      // Default: operational (Laporan WA Mingguan)
+      if (targetTab === 'sales') return currentTab === 'sales';
+      if (targetTab === 'quick') return currentTab === 'quick';
       return !currentTab || currentTab === 'operational';
     }
-
-    // 7. Master Data tabs (/master)
     if (targetPath === '/master') {
       if (pathname !== '/master') return false;
-      if (targetTab === 'customer') {
-        return currentTab === 'customer';
-      }
-      if (targetTab === 'keluhan') {
-        return currentTab === 'keluhan';
-      }
-      if (targetTab === 'backup') {
-        return currentTab === 'backup';
-      }
-      // Default: vendor
+      if (targetTab === 'customer') return currentTab === 'customer';
+      if (targetTab === 'keluhan') return currentTab === 'keluhan';
+      if (targetTab === 'backup') return currentTab === 'backup';
       return !currentTab || currentTab === 'vendor';
     }
 
@@ -208,10 +164,11 @@ function SidebarNav() {
 
   const renderSidebarContent = (isMobile = false) => {
     const expanded = isMobile ? true : isExpanded;
+    const { appName, appSubtitle, logoUrl } = config.branding;
 
     return (
       <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 select-none">
-        {/* 1. Header / Brand Logo */}
+        {/* 1. Header / Dynamic Brand Logo */}
         <div className="h-20 px-3 border-b border-slate-200/90 dark:border-slate-800 flex items-center shrink-0">
           <div className="flex items-center justify-between w-full min-h-[36px]">
             <Link
@@ -219,23 +176,24 @@ function SidebarNav() {
               onClick={() => {
                 if (isMobile) setIsMobileSidebarOpen(false);
               }}
-              className={`flex items-center gap-2.5 overflow-hidden ${expanded ? 'px-1' : 'justify-center w-full'
-                }`}
+              className={`flex items-center gap-2.5 overflow-hidden ${expanded ? 'px-1' : 'justify-center w-full'}`}
             >
-              {/* Logo Best Computel */}
               <img
-                src="/logo.png"
-                alt="Best Computel"
+                src={logoUrl || '/logo.png'}
+                alt={appName || 'Logo'}
                 className="h-8 w-8 shrink-0 object-contain"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/logo.png';
+                }}
               />
 
               {expanded && (
                 <div className="min-w-0 truncate">
-                  <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white leading-none block">
-                    BEST COMPUTEL
+                  <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white leading-none block truncate">
+                    {appName || 'BEST COMPUTEL'}
                   </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold leading-tight block mt-1">
-                    RMA & Service
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold leading-tight block mt-1 truncate">
+                    {appSubtitle || 'RMA & Service'}
                   </span>
                 </div>
               )}
@@ -251,7 +209,7 @@ function SidebarNav() {
                   setIsHovered(true);
                   toggleSidebarPin();
                 }}
-                className={`hidden lg:flex p-1.5 rounded-lg transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 ${isSidebarPinned ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50' : ''
+                className={`hidden lg:flex p-1.5 rounded-lg transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 ${isSidebarPinned ? 'text-brand bg-brand-soft' : ''
                   }`}
                 title={isSidebarPinned ? 'Lepas Sematan (Auto-hide aktif)' : 'Sematkan Menu (Selalu Terbuka)'}
                 aria-label="Toggle Pin Sidebar"
@@ -274,72 +232,61 @@ function SidebarNav() {
           </div>
         </div>
 
-        {/* 2. Navigation Groups List */}
+        {/* 2. Dynamic Navigation Groups List */}
         <div className="flex-1 py-2 px-2 overflow-y-auto overflow-x-hidden space-y-3">
-          {NAVIGATION_GROUPS.map((group) => {
-            const visibleItems = group.items.filter(
-              (item) => !item.adminOnly || user?.role === 'ADMIN'
-            );
-            if (visibleItems.length === 0) return null;
+          {navigationGroups.map((group) => (
+            <div key={group.groupName} className="space-y-1">
+              {expanded ? (
+                <div className="px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">
+                  {group.groupName}
+                </div>
+              ) : (
+                <div className="my-1 border-t border-slate-100 dark:border-slate-800/80 mx-1" />
+              )}
 
-            return (
-              <div key={group.groupName} className="space-y-1">
-                {/* Section Header */}
-                {expanded ? (
-                  <div className="px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">
-                    {group.groupName}
-                  </div>
-                ) : (
-                  <div className="my-1 border-t border-slate-100 dark:border-slate-800/80 mx-1" />
-                )}
+              {group.items.map((item) => {
+                const active = isItemActive(item.href);
+                const Icon = item.icon;
 
-                {/* Group Nav Items */}
-                {visibleItems.map((item) => {
-                  const active = isItemActive(item.href);
-                  const Icon = item.icon;
-
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => {
-                        if (isMobile) setIsMobileSidebarOpen(false);
-                      }}
-                      title={!expanded ? item.name : undefined}
-                      className={`flex items-center rounded-xl text-xs transition-colors duration-100 group relative ${expanded
-                        ? 'gap-2.5 px-3 py-2 font-medium'
-                        : 'justify-center p-2.5 w-10 h-10 mx-auto'
-                        } ${active
-                          ? 'bg-blue-500/15 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold border border-blue-300/80 dark:border-blue-700/60 shadow-2xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
+                return (
+                  <Link
+                    key={item.key}
+                    href={item.href}
+                    onClick={() => {
+                      if (isMobile) setIsMobileSidebarOpen(false);
+                    }}
+                    title={!expanded ? item.name : undefined}
+                    className={`flex items-center rounded-xl text-xs transition-colors duration-100 group relative ${expanded
+                      ? 'gap-2.5 px-3 py-2 font-medium'
+                      : 'justify-center p-2.5 w-10 h-10 mx-auto'
+                      } ${active
+                        ? 'bg-brand-soft text-brand font-semibold border border-brand shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
+                      }`}
+                  >
+                    <Icon
+                      className={`w-4 h-4 shrink-0 ${active
+                        ? 'text-brand'
+                        : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'
                         }`}
-                    >
-                      <Icon
-                        className={`w-4 h-4 shrink-0 ${active
-                          ? 'text-blue-600 dark:text-blue-400'
-                          : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'
-                          }`}
-                      />
+                    />
 
-                      {expanded && <span className="truncate whitespace-nowrap">{item.name}</span>}
+                    {expanded && <span className="truncate whitespace-nowrap">{item.name}</span>}
 
-                      {/* Floating tooltip on compact/collapsed mode on desktop */}
-                      {!expanded && (
-                        <span className="fixed left-16 ml-2.5 px-2.5 py-1 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-xl border border-slate-700 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">
-                          {item.name}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            );
-          })}
+                    {!expanded && (
+                      <span className="fixed left-16 ml-2.5 px-2.5 py-1 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-xl border border-slate-700 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">
+                        {item.name}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </div>
 
         {/* 3. Bottom Pinned Items: Support & Settings */}
         <div className="p-2 border-t border-slate-100 dark:border-slate-800/80 space-y-1">
-          {/* Support Button */}
           <button
             type="button"
             onClick={() => {
@@ -359,14 +306,13 @@ function SidebarNav() {
             )}
           </button>
 
-          {/* Settings Button */}
           <button
             type="button"
             onClick={() => {
               setIsSettingsModalOpen(true);
               if (isMobile) setIsMobileSidebarOpen(false);
             }}
-            title={!expanded ? 'Pengaturan' : undefined}
+            title={!expanded ? 'Pengaturan Tampilan' : undefined}
             className={`w-full flex items-center rounded-xl text-xs transition-colors duration-100 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 group ${expanded ? 'gap-2.5 px-3 py-2 font-medium' : 'justify-center p-2.5 w-10 h-10 mx-auto'
               }`}
           >
@@ -416,12 +362,12 @@ function SidebarNav() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in zoom-in-95 duration-150 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400">
+                <div className="p-2 rounded-xl bg-brand-soft text-brand">
                   <HelpCircle className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 dark:text-white text-base">Support & Bantuan</h3>
-                  <p className="text-xs text-slate-500">Best Computel Service Desk</p>
+                  <p className="text-xs text-slate-500">{config.branding.appName} Service Desk</p>
                 </div>
               </div>
               <button
@@ -436,11 +382,11 @@ function SidebarNav() {
             <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300">
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
                 <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <Wrench className="w-4 h-4 text-blue-600" />
-                  BCT Service & RMA Management v1.0
+                  <Wrench className="w-4 h-4 text-brand" />
+                  {config.branding.appName} — {config.branding.appSubtitle}
                 </p>
                 <p className="text-slate-500 leading-relaxed">
-                  Sistem otomatisasi pencatatan tiket servis, tracking garansi vendor, print surat jalan, dan broadcast WhatsApp.
+                  Sistem manajemen tiket servis, tracking garansi vendor, cetak tanda terima & surat jalan.
                 </p>
               </div>
 
@@ -448,15 +394,15 @@ function SidebarNav() {
                 <div className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
                   <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
                   <div>
-                    <p className="font-semibold text-slate-900 dark:text-white">Hotline IT Support</p>
-                    <p className="text-slate-500">+62 812-3456-7890 (Wandi / Satryo)</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">Kontak Toko / Support</p>
+                    <p className="text-slate-500">{config.branding.companyPhone}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
-                  <Mail className="w-4 h-4 text-blue-600 shrink-0" />
+                  <Mail className="w-4 h-4 text-brand shrink-0" />
                   <div>
-                    <p className="font-semibold text-slate-900 dark:text-white">Email Helpdesk</p>
-                    <p className="text-slate-500">support@bestcomputel.com</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">Alamat Operasional</p>
+                    <p className="text-slate-500">{config.branding.companyAddress}</p>
                   </div>
                 </div>
               </div>
@@ -499,7 +445,6 @@ function SidebarNav() {
             </div>
 
             <div className="space-y-4 text-xs">
-              {/* Tema Tampilan */}
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   Mode Warna Tema
@@ -509,7 +454,7 @@ function SidebarNav() {
                     type="button"
                     onClick={() => setTheme('light')}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${theme === 'light'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 font-semibold'
+                      ? 'border-brand bg-brand-soft text-brand font-semibold'
                       : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
                       }`}
                   >
@@ -520,7 +465,7 @@ function SidebarNav() {
                     type="button"
                     onClick={() => setTheme('dark')}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${theme === 'dark'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-400 font-semibold'
+                      ? 'border-brand bg-brand-soft text-brand font-semibold'
                       : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
                       }`}
                   >
@@ -531,7 +476,7 @@ function SidebarNav() {
                     type="button"
                     onClick={() => setTheme('system')}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${theme === 'system'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 font-semibold'
+                      ? 'border-brand bg-brand-soft text-brand font-semibold'
                       : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
                       }`}
                   >
@@ -541,7 +486,6 @@ function SidebarNav() {
                 </div>
               </div>
 
-              {/* Auto-Hide Toggle */}
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
                 <div>
                   <p className="font-semibold text-slate-900 dark:text-white">Sematkan Menu Samping (Pin)</p>
@@ -551,11 +495,11 @@ function SidebarNav() {
                   type="button"
                   onClick={() => toggleSidebarPin()}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${isSidebarPinned
-                    ? 'bg-blue-500 text-white shadow-xs'
+                    ? 'bg-brand text-white shadow-xs'
                     : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                     }`}
                 >
-                  {isSidebarPinned ? 'Terselip/Terkunci' : 'Auto-Hide (Aktif)'}
+                  {isSidebarPinned ? 'Terkunci' : 'Auto-Hide (Aktif)'}
                 </button>
               </div>
             </div>

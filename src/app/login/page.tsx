@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, Suspense, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useAppConfig } from '@/components/config/AppConfigProvider';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import {
   Lock,
@@ -19,7 +20,6 @@ import {
   RefreshCw,
   KeyRound,
   ArrowLeft,
-  Sparkles,
   BarChart3,
   FileText,
   Truck
@@ -49,11 +49,11 @@ function GoogleIcon({ className = 'w-5 h-5' }: { className?: string }) {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
 
   const { user, login, sendOtp, verifyOtp, logout, isLoading: isAuthLoading } = useAuth();
+  const { config } = useAppConfig();
 
   // Mode: 'credentials' | 'gmail_email' | 'gmail_otp'
   const [loginMethod, setLoginMethod] = useState<'credentials' | 'gmail'>('credentials');
@@ -183,7 +183,12 @@ function LoginForm() {
       {/* ========================================================
           LEFT COLUMN: SalesSkip-inspired Electric Royal Blue Banner
           ======================================================== */}
-      <div className="relative w-full lg:w-1/2 bg-gradient-to-br from-[#2347ea] via-[#203fdf] to-[#172eb0] text-white flex flex-col justify-between p-6 sm:p-10 lg:p-16 overflow-hidden min-h-[260px] lg:min-h-screen shrink-0">
+      <div
+        className="relative w-full lg:w-1/2 text-white flex flex-col justify-between p-6 sm:p-10 lg:p-16 overflow-hidden min-h-[260px] lg:min-h-screen shrink-0"
+        style={{
+          background: `linear-gradient(135deg, ${config.branding.primaryColor || '#2563eb'} 0%, #0f172a 100%)`
+        }}
+      >
         {/* Abstract Architectural Lines */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none opacity-25"
@@ -231,14 +236,17 @@ function LoginForm() {
           {/* Logo & Judul Berdampingan */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 sm:gap-8 lg:gap-10">
             <img
-              src="/logo.png"
-              alt="Logo Best Computel"
+              src={config.branding.logoUrl || '/logo.png'}
+              alt={`Logo ${config.branding.appName}`}
               className="w-28 h-28 sm:w-36 sm:h-36 lg:w-44 lg:h-44 shrink-0 object-contain drop-shadow-2xl"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/logo.png';
+              }}
             />
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-white leading-[1.08]">
-              Best Computel <br />
-              <span className="text-blue-200">RMA & Service</span>
+              {config.branding.appName} <br />
+              <span className="text-white/80">{config.branding.appSubtitle}</span>
             </h1>
           </div>
 
@@ -265,8 +273,8 @@ function LoginForm() {
         </div>
 
         {/* Bottom Footer Note (Tetap di Bawah) */}
-        <div className="relative z-10 pt-4 text-xs sm:text-sm text-blue-200/80 font-medium">
-          2026 Best Computel RMA & Service. All right reserved.
+        <div className="relative z-10 pt-4 text-xs sm:text-sm text-white/75 font-medium">
+          © {new Date().getFullYear()} {config.branding.appName} {config.branding.appSubtitle}. All rights reserved.
         </div>
       </div>
 

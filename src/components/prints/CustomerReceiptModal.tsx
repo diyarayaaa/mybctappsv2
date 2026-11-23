@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { Ticket } from '@/types';
+import { Ticket, BrandingConfig, CustomFieldConfig } from '@/types';
 import { formatDateIndo } from '@/lib/whatsapp-formatter';
-import { Printer, FileText, Sparkles, Scissors } from 'lucide-react';
+import { Printer, FileText, Sparkles } from 'lucide-react';
+import { useAppConfig } from '@/components/config/AppConfigProvider';
 
 interface CustomerReceiptModalProps {
   isOpen: boolean;
@@ -12,7 +13,6 @@ interface CustomerReceiptModalProps {
   ticket: Ticket | null;
 }
 
-// Helper format tanggal lengkap Indonesia seperti di contoh-tt-1.pdf ("Senin, 07 September 2026")
 function formatDateFullIndo(dateStr?: string | null): string {
   if (!dateStr) return '-';
   try {
@@ -33,44 +33,57 @@ function formatDateFullIndo(dateStr?: string | null): string {
   }
 }
 
-// FORMAT 1: TANDA TERIMA STANDAR (Persis 100% seperti contoh-tt-1.pdf & Gambar 2)
-function StandardReceipt({ ticket }: { ticket: Ticket }) {
+interface ReceiptRenderProps {
+  ticket: Ticket;
+  branding: BrandingConfig;
+  snLabel: string;
+  customFields: CustomFieldConfig[];
+}
+
+// FORMAT 1: TANDA TERIMA STANDAR
+function StandardReceipt({ ticket, branding, snLabel, customFields }: ReceiptRenderProps) {
   const kelengkapanList = Array.isArray(ticket.kelengkapan) ? ticket.kelengkapan : [];
-  const kelengkapanStr = kelengkapanList.length > 0 ? kelengkapanList.join(', ') : 'TUTUP CASING FULL';
-  const customerNameUpper = ticket.nama_customer.toUpperCase().startsWith('TN') || ticket.nama_customer.toUpperCase().startsWith('NY')
-    ? ticket.nama_customer.toUpperCase()
-    : `TN/NY. ${ticket.nama_customer.toUpperCase()}`;
+  const kelengkapanStr = kelengkapanList.length > 0 ? kelengkapanList.join(', ') : 'UNIT SAJA';
+  const customerNameUpper =
+    ticket.nama_customer.toUpperCase().startsWith('TN') || ticket.nama_customer.toUpperCase().startsWith('NY')
+      ? ticket.nama_customer.toUpperCase()
+      : `TN/NY. ${ticket.nama_customer.toUpperCase()}`;
+
+  const filledCustomFields = customFields.filter((f) => {
+    const val = ticket.custom_data?.[f.field_key];
+    return val !== undefined && val !== null && String(val).trim() !== '';
+  });
 
   return (
     <div
       className="bg-white text-black font-sans text-xs leading-tight w-full max-w-[780px] mx-auto print:max-w-none print:w-full print:p-0 print:m-0"
       style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
     >
-      {/* KOTAK ATAS: Dikelilingi Border Hitam Penuh di Semua Sisi (Sesuai Gambar 2) */}
       <div className="border-[1.5px] border-black p-3 sm:p-4 mb-2.5 bg-white">
-        {/* 1. Header (Logo, Toko, Judul Tanda Terima) */}
+        {/* 1. Dynamic Header (Logo, Nama Toko, Alamat, WA) */}
         <div className="flex items-start justify-between pb-2 border-b border-black">
-          {/* Kiri: Logo + Info Toko */}
           <div className="flex items-center gap-3">
             <img
-              src="/logo.png"
+              src={branding.logoUrl || '/logo.png'}
               alt="Logo"
               className="w-12 h-12 object-contain"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/logo.png';
+              }}
             />
             <div>
               <h1 className="text-xs sm:text-sm font-bold tracking-tight text-black uppercase leading-tight">
-                BEST COMPUTEL RMA & SERVICE
+                {branding.appName} {branding.appSubtitle}
               </h1>
               <p className="text-[10px] sm:text-[11px] text-black leading-tight">
-                Jl. Terusan pembangunan No.9C, Tarogong kidul - Garut
+                {branding.companyAddress}
               </p>
               <p className="text-[10px] sm:text-[11px] text-black leading-tight">
-                WA. 0895-2665-5777
+                WA. {branding.companyPhone}
               </p>
             </div>
           </div>
 
-          {/* Kanan: Judul & No RMA */}
           <div className="text-right">
             <h2 className="text-base sm:text-xl font-bold text-black tracking-tight uppercase">
               TANDA TERIMA
@@ -81,9 +94,8 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
           </div>
         </div>
 
-        {/* 2. Metadata Grid (2 Kolom) */}
+        {/* 2. Metadata Grid */}
         <div className="grid grid-cols-2 gap-4 py-2 text-[11px]">
-          {/* Kolom Kiri */}
           <div className="space-y-0.5">
             <div className="flex">
               <span className="w-28 text-black">Nama Customer</span>
@@ -102,7 +114,6 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
             </div>
           </div>
 
-          {/* Kolom Kanan */}
           <div className="space-y-0.5 pl-8 sm:pl-12">
             <div className="flex">
               <span className="w-28 text-black">Tanggal Masuk</span>
@@ -110,7 +121,7 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
               <span className="text-black flex-1">{formatDateFullIndo(ticket.tanggal_masuk)}</span>
             </div>
             <div className="flex">
-              <span className="w-28 text-black">Estimasi Selsai</span>
+              <span className="w-28 text-black">Estimasi Selesai</span>
               <span className="mr-1">:</span>
               <span className="text-black flex-1">{formatDateFullIndo(ticket.estimasi_selesai)}</span>
             </div>
@@ -122,13 +133,25 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
           </div>
         </div>
 
-        {/* 3. Tabel Data Perangkat & 4. Tanda Tangan, Biaya & Catatan */}
+        {/* Optional Custom Fields Row */}
+        {filledCustomFields.length > 0 && (
+          <div className="border border-black px-2 py-1 mb-2 bg-slate-50 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px]">
+            {filledCustomFields.map((cf) => (
+              <div key={cf.field_key}>
+                <span className="font-bold uppercase">{cf.label}:</span>{' '}
+                <span>{String(ticket.custom_data?.[cf.field_key])}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 3. Tabel Data Perangkat */}
         <div className="border border-black mb-2 overflow-hidden">
           <table className="w-full text-[10px] sm:text-[11px] border-collapse">
             <thead>
               <tr className="bg-slate-200 font-bold text-black">
                 <th className="py-1 px-2 border-r border-b border-black w-[28%] text-center uppercase">NAMA PERANGKAT</th>
-                <th className="py-1 px-2 border-r border-b border-black w-[20%] text-center uppercase">SERIAL NUMBER</th>
+                <th className="py-1 px-2 border-r border-b border-black w-[20%] text-center uppercase">{snLabel}</th>
                 <th className="py-1 px-2 border-r border-b border-black w-[26%] text-center uppercase">KELENGKAPAN</th>
                 <th className="py-1 px-2 border-b border-black w-[26%] text-center uppercase">KELUHAN</th>
               </tr>
@@ -151,9 +174,8 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
             </tbody>
           </table>
 
-          {/* 4. Bagian Tanda Tangan, Biaya & Catatan */}
+          {/* 4. Tanda Tangan, Biaya & Catatan */}
           <div className="grid grid-cols-12 text-[10px] sm:text-[11px] border-t border-black">
-            {/* Kolom Tanda Tangan (Menerima, Menyerahkan, Mengambil) */}
             <div className="col-span-5 border-r border-black p-2 flex flex-col justify-between min-h-[85px]">
               <div className="grid grid-cols-3 text-center text-[10px]">
                 <div>Menerima</div>
@@ -167,7 +189,6 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
               </div>
             </div>
 
-            {/* Kolom Biaya */}
             <div className="col-span-4 border-r border-black flex flex-col">
               <div className="bg-slate-200 font-bold text-center py-0.5 border-b border-black text-[10px] sm:text-[11px]">
                 BIAYA
@@ -197,7 +218,6 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
               </div>
             </div>
 
-            {/* Kolom Catatan */}
             <div className="col-span-3 flex flex-col">
               <div className="bg-slate-200 font-bold text-center py-0.5 border-b border-black text-[10px] sm:text-[11px]">
                 CATATAN
@@ -213,10 +233,9 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
         <div className="grid grid-cols-12 border border-black overflow-hidden">
           <div className="col-span-9 p-1.5 text-[9px] sm:text-[10px] space-y-0.5 leading-snug">
             <p className="font-bold uppercase text-[9px] sm:text-[10px]">CATATAN :</p>
-            <p>• Pantau status pengerjaan secara online di website/portal tracking menggunakan No. Tanda Terima di atas.</p>
-            <p>• Tanda terima wajib dibawa saat pengambilan, jika tidak wajib verifikasi melalui WhatsApp.</p>
-            <p>• Kami tidak bertanggung jawab atas kehilangan data yang disebabkan oleh kejadian tak terduga.</p>
-            <p>• Barang yang tidak diambil dalam 30 hari setelah pemberitahuan berada di luar tanggung jawab kami.</p>
+            {(branding.receiptFooterNotes || []).map((note, idx) => (
+              <p key={idx}>• {note}</p>
+            ))}
           </div>
           <div className="col-span-3 border-l border-black flex flex-col text-center">
             <div className="bg-slate-200 font-bold py-0.5 border-b border-black text-[10px] sm:text-[11px]">
@@ -229,10 +248,10 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
         </div>
       </div>
 
-      {/* 6. Garis Potong (Dashed Cut Line) */}
+      {/* 6. Garis Potong */}
       <div className="my-2.5 border-t border-dashed border-black w-full" />
 
-      {/* 7. Slip Kupon Toko Bagian Bawah (Kotak Border Keliling Penuh 4 Sisi) */}
+      {/* 7. Slip Kupon Toko */}
       <div className="border border-black p-2.5 text-[10px] grid grid-cols-3 gap-2 bg-white">
         <div className="space-y-0.5">
           <div className="flex">
@@ -292,26 +311,42 @@ function StandardReceipt({ ticket }: { ticket: Ticket }) {
   );
 }
 
-// FORMAT 2: TANDA TERIMA PROFESIONAL (Modern Layout - Siap diisi template profesional)
-function ProfessionalReceipt({ ticket }: { ticket: Ticket }) {
+// FORMAT 2: TANDA TERIMA PROFESIONAL
+function ProfessionalReceipt({ ticket, branding, snLabel, customFields }: ReceiptRenderProps) {
   const kelengkapanList = Array.isArray(ticket.kelengkapan) ? ticket.kelengkapan : [];
   const kelengkapanStr = kelengkapanList.length > 0 ? kelengkapanList.join(', ') : 'Unit Saja';
+  const filledCustomFields = customFields.filter((f) => {
+    const val = ticket.custom_data?.[f.field_key];
+    return val !== undefined && val !== null && String(val).trim() !== '';
+  });
 
   return (
     <div className="bg-white text-slate-900 p-6 font-sans text-xs leading-relaxed max-w-[780px] mx-auto border border-slate-300 print:border-none print:p-0 print:m-0 print:max-w-none rounded-xl shadow-xs space-y-4">
-      {/* Header Modern */}
       <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4">
         <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+          <img
+            src={branding.logoUrl || '/logo.png'}
+            alt="Logo"
+            className="w-12 h-12 object-contain"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/logo.png';
+            }}
+          />
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-base font-black tracking-tight text-slate-900">BEST COMPUTEL</span>
-              <span className="px-2 py-0.5 text-[9px] font-extrabold bg-blue-500 text-white rounded-md">
-                SERVICE & RMA
+              <span className="text-base font-black tracking-tight text-slate-900 uppercase">
+                {branding.appName}
+              </span>
+              <span
+                className="px-2 py-0.5 text-[9px] font-extrabold text-white rounded-md uppercase"
+                style={{ backgroundColor: branding.primaryColor || '#2563eb' }}
+              >
+                {branding.appSubtitle}
               </span>
             </div>
-            <p className="text-[11px] text-slate-600">Pusat Layanan Servis, Komputer, Laptop & Klaim Garansi</p>
-            <p className="text-[11px] font-semibold text-slate-700">Jl. Terusan pembangunan No.9C, Garut • WA: 0895-2665-5777</p>
+            <p className="text-[11px] font-semibold text-slate-700">
+              {branding.companyAddress} • WA: {branding.companyPhone}
+            </p>
           </div>
         </div>
 
@@ -323,7 +358,6 @@ function ProfessionalReceipt({ ticket }: { ticket: Ticket }) {
         </div>
       </div>
 
-      {/* Grid Informasi */}
       <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
         <div className="space-y-1.5">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Informasi Pelanggan</p>
@@ -335,12 +369,22 @@ function ProfessionalReceipt({ ticket }: { ticket: Ticket }) {
         <div className="space-y-1.5">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Detail Perangkat & Pengerjaan</p>
           <p><span className="font-semibold text-slate-600">Perangkat:</span> <span className="font-bold text-slate-900">{ticket.nama_barang}</span> ({ticket.jenis_barang})</p>
-          <p><span className="font-semibold text-slate-600">Serial Number:</span> <span className="font-mono">{ticket.serial_number || '-'}</span></p>
+          <p><span className="font-semibold text-slate-600">{snLabel}:</span> <span className="font-mono">{ticket.serial_number || '-'}</span></p>
           <p><span className="font-semibold text-slate-600">Estimasi Selesai:</span> {formatDateIndo(ticket.estimasi_selesai)}</p>
         </div>
       </div>
 
-      {/* Keluhan & Kelengkapan */}
+      {filledCustomFields.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px]">
+          {filledCustomFields.map((cf) => (
+            <div key={cf.field_key}>
+              <span className="text-[10px] font-bold uppercase text-slate-400 block">{cf.label}</span>
+              <span className="font-semibold text-slate-900">{String(ticket.custom_data?.[cf.field_key])}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <div className="p-3 border border-slate-200 rounded-xl bg-slate-50/50">
           <p className="font-bold text-slate-700 text-[11px] mb-1">Keluhan Kerusakan / Masalah:</p>
@@ -352,7 +396,6 @@ function ProfessionalReceipt({ ticket }: { ticket: Ticket }) {
         </div>
       </div>
 
-      {/* Rincian Biaya */}
       <div className="p-3.5 bg-slate-900 text-white rounded-xl flex items-center justify-between">
         <div>
           <p className="text-[10px] text-slate-400 uppercase font-bold">Teknisi Penanggung Jawab</p>
@@ -374,13 +417,12 @@ function ProfessionalReceipt({ ticket }: { ticket: Ticket }) {
         </div>
       </div>
 
-      {/* Tanda Tangan & S&K */}
       <div className="grid grid-cols-2 gap-4 pt-2">
         <div className="text-[10px] text-slate-500 space-y-1">
           <p className="font-bold text-slate-700">Syarat & Ketentuan Pengambilan:</p>
-          <p>1. Tanda terima ini adalah bukti sah kepemilikan dan wajib dibawa saat pengambilan unit.</p>
-          <p>2. Lacak progres pengerjaan unit kapan saja di portal tracking online dengan No. Tanda Terima di atas.</p>
-          <p>3. Konfirmasi otomatis akan dikirimkan via WhatsApp setelah servis selesai.</p>
+          {(branding.receiptFooterNotes || []).map((note, idx) => (
+            <p key={idx}>{idx + 1}. {note}</p>
+          ))}
         </div>
         <div className="grid grid-cols-2 text-center text-[10px] pt-4">
           <div>
@@ -388,7 +430,7 @@ function ProfessionalReceipt({ ticket }: { ticket: Ticket }) {
             <p className="font-bold text-slate-800 border-t border-slate-300 pt-1">({ticket.nama_customer})</p>
           </div>
           <div>
-            <p className="text-slate-500 mb-8">Best Computel</p>
+            <p className="text-slate-500 mb-8">{branding.appName}</p>
             <p className="font-bold text-slate-800 border-t border-slate-300 pt-1">({ticket.teknisi})</p>
           </div>
         </div>
@@ -403,8 +445,12 @@ export function CustomerReceiptModal({
   ticket
 }: CustomerReceiptModalProps) {
   const [receiptFormat, setReceiptFormat] = useState<'standard' | 'professional'>('standard');
+  const { config, getFieldLabel } = useAppConfig();
 
   if (!ticket) return null;
+
+  const snLabel = getFieldLabel('serial_number', 'SERIAL NUMBER');
+  const customFields = config.fields.filter((f) => !f.is_builtin);
 
   const handlePrint = () => {
     window.print();
@@ -427,7 +473,7 @@ export function CustomerReceiptModal({
               onClick={() => setReceiptFormat('standard')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 receiptFormat === 'standard'
-                  ? 'bg-blue-500 text-white shadow-xs'
+                  ? 'bg-brand text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -440,7 +486,7 @@ export function CustomerReceiptModal({
               onClick={() => setReceiptFormat('professional')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 receiptFormat === 'professional'
-                  ? 'bg-blue-500 text-white shadow-xs'
+                  ? 'bg-brand text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -451,17 +497,27 @@ export function CustomerReceiptModal({
 
           <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium px-2">
             {receiptFormat === 'standard'
-              ? 'Format Standar BCT (Kupon Toko + Tanda Tangan)'
-              : 'Format Profesional (Siap dikustomisasi)'}
+              ? `Format Standar ${config.branding.appName} (Kupon + Tanda Tangan)`
+              : 'Format Profesional Modern'}
           </div>
         </div>
 
         {/* Printable Area */}
         <div id="receipt-print-area" className="printable-area">
           {receiptFormat === 'standard' ? (
-            <StandardReceipt ticket={ticket} />
+            <StandardReceipt
+              ticket={ticket}
+              branding={config.branding}
+              snLabel={snLabel}
+              customFields={customFields}
+            />
           ) : (
-            <ProfessionalReceipt ticket={ticket} />
+            <ProfessionalReceipt
+              ticket={ticket}
+              branding={config.branding}
+              snLabel={snLabel}
+              customFields={customFields}
+            />
           )}
         </div>
 
@@ -477,7 +533,7 @@ export function CustomerReceiptModal({
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-500 hover:bg-blue-600 active:scale-95 shadow-md shadow-blue-500/20 rounded-xl transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover active:scale-95 shadow-md rounded-xl transition-all"
           >
             <Printer className="w-4 h-4" />
             <span>Cetak Tanda Terima ({receiptFormat === 'standard' ? 'Standar' : 'Profesional'})</span>

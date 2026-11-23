@@ -1,13 +1,14 @@
-export type JenisLayanan = 'SERVICE' | 'GARANSI';
+export type JenisLayanan = 'SERVICE' | 'GARANSI' | string;
 
-export type JenisBarang = 
-  | 'Laptop' 
-  | 'PC' 
-  | 'Printer' 
-  | 'Projector' 
-  | 'Aksesoris' 
-  | 'Sparepart' 
-  | 'Other';
+export type JenisBarang =
+  | 'Laptop'
+  | 'PC'
+  | 'Printer'
+  | 'Projector'
+  | 'Aksesoris'
+  | 'Sparepart'
+  | 'Other'
+  | string;
 
 export type StatusTiket =
   | 'PROSES SERVICE'
@@ -16,11 +17,12 @@ export type StatusTiket =
   | 'SELESAI & DIAMBIL'
   | 'GAGAL SERVICE/GARANSI'
   | 'PROSES GARANSI'
-  | 'ALIH SERVICE';
+  | 'ALIH SERVICE'
+  | string;
 
 export type Teknisi = 'Wandi' | 'Satryo' | 'Derida' | 'Anzar' | string;
 
-export type HasilServiceGaransi = 'Diservice' | 'Diganti baru';
+export type HasilServiceGaransi = 'Diservice' | 'Diganti baru' | string;
 
 export type UserRole = 'ADMIN' | 'TEKNISI' | 'SALES' | 'VIEWER';
 
@@ -46,11 +48,11 @@ export interface Ticket {
   nomor_layanan: string;
   tanggal_masuk: string;
   jenis_layanan: JenisLayanan;
-  
+
   // Info Pelanggan
   nama_customer: string;
   no_hp: string;
-  
+
   // Info Perangkat
   jenis_barang: JenisBarang;
   nama_barang: string;
@@ -58,18 +60,18 @@ export interface Ticket {
   keluhan: string;
   kelengkapan: string[]; // parsed from JSON or array
   estimasi_selesai?: string | null;
-  
+
   // Penugasan & Status
   teknisi: Teknisi;
   status: StatusTiket;
   catatan?: string | null;
-  
+
   // Keuangan
   estimasi_biaya: number;
   dp: number;
   sisa: number;
   biaya_akhir?: number;
-  
+
   // Alur Vendor & Garansi
   no_surat_jalan?: string | null;
   distributor_vendor?: string | null;
@@ -78,7 +80,10 @@ export interface Ticket {
   hasil_service_garansi?: HasilServiceGaransi | null;
   sn_baru?: string | null;
   tgl_diambil_customer?: string | null;
-  
+
+  // Dynamic Custom Fields JSON
+  custom_data?: Record<string, string | number | null>;
+
   created_at: string;
   updated_at: string;
 }
@@ -139,4 +144,87 @@ export interface DashboardStats {
   garansiDiVendor?: number;
   stokTokoReady?: number;
   serviceSelesaiBulanIni?: number;
+}
+
+// ==========================================
+// WHITE-LABEL / MULTI-CLIENT CONFIG TYPES
+// ==========================================
+
+export type ColorSchemeKey =
+  | 'blue'
+  | 'amber'
+  | 'emerald'
+  | 'purple'
+  | 'orange'
+  | 'rose'
+  | 'teal'
+  | 'indigo'
+  | 'sky';
+
+export interface BrandingConfig {
+  appName: string;
+  appSubtitle: string;
+  logoUrl: string;
+  primaryColor: string; // Hex color e.g. #2563eb
+  companyAddress: string;
+  companyPhone: string;
+  companyHours: string;
+  receiptFooterNotes: string[];
+}
+
+export interface FeatureToggleItem {
+  feature_key: string;
+  default_label: string;
+  custom_label: string;
+  href: string;
+  group_name: string;
+  icon: string;
+  is_enabled: boolean;
+  admin_only: boolean;
+  sort_order: number;
+}
+
+export interface KpiConfigItem {
+  id: string;
+  kpi_key: string;
+  label: string;
+  icon: string;
+  color_scheme: ColorSchemeKey;
+  is_visible: boolean;
+  sort_order: number;
+}
+
+export type CustomFieldType = 'text' | 'number' | 'select' | 'date' | 'textarea';
+
+export interface CustomFieldConfig {
+  id: string;
+  field_key: string;
+  label: string;
+  field_type: CustomFieldType;
+  options: string[];
+  placeholder: string;
+  section: 'basic' | 'customer' | 'device' | 'status' | 'vendor' | 'finance' | 'custom';
+  is_builtin: boolean;
+  is_visible_in_form: boolean;
+  is_required: boolean;
+  show_in_table: boolean;
+  show_in_compact: boolean;
+  sort_order: number;
+}
+
+export interface FormPresetsConfig {
+  jenisBarang: string[];
+  jenisLayanan: string[];
+  kelengkapanUmum: string[];
+  statusService: string[];
+  statusGaransi: string[];
+  teknisi: string[];
+}
+
+export interface AppConfig {
+  branding: BrandingConfig;
+  features: FeatureToggleItem[];
+  kpis: KpiConfigItem[];
+  fields: CustomFieldConfig[];
+  presets: FormPresetsConfig;
 }

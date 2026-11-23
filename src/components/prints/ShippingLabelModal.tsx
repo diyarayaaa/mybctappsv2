@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { MasterVendor, Ticket } from '@/types';
 import { COMPANY_INFO } from '@/lib/constants';
-import { Printer, Edit3, Building2, Eye, SlidersHorizontal, Check } from 'lucide-react';
+import { Printer, Edit3, Building2 } from 'lucide-react';
 
 interface ShippingLabelModalProps {
   isOpen: boolean;
@@ -17,9 +17,7 @@ interface ShippingLabelModalProps {
 export function ShippingLabelModal({
   isOpen,
   onClose,
-  vendorName = '',
-  noSuratJalan = '',
-  tickets = []
+  vendorName = ''
 }: ShippingLabelModalProps) {
   const [vendors, setVendors] = useState<MasterVendor[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState<string>('');
@@ -27,13 +25,22 @@ export function ShippingLabelModal({
   // Editable fields for label
   const [namaPenerima, setNamaPenerima] = useState('');
   const [headerTitle, setHeaderTitle] = useState('');
-  const [wilayah, setWilayah] = useState<string>('BDG');
   const [alamatLengkap, setAlamatLengkap] = useState('');
   const [kontakWa, setKontakWa] = useState('');
   const [isEditingCustom, setIsEditingCustom] = useState(false);
 
   // Size option: 'small' (Ukuran Kecil), 'large' (Ukuran Besar), 'both' (Keduanya di 1 lembar A4)
   const [labelSize, setLabelSize] = useState<'small' | 'large' | 'both'>('small');
+
+  const applyVendor = useCallback((v: MasterVendor) => {
+    const shortName = v.nama_vendor
+      .replace(/^(PT\.|CV\.|TOKO|SERVICE CENTER)\s+/i, '')
+      .trim();
+    setHeaderTitle(shortName || v.nama_vendor);
+    setNamaPenerima(v.nama_vendor);
+    setAlamatLengkap(v.alamat_lengkap || '');
+    setKontakWa(v.kontak_wa || '-');
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -44,7 +51,6 @@ export function ShippingLabelModal({
         const list: MasterVendor[] = data.vendors || [];
         setVendors(list);
 
-        // Match initial vendorName if provided
         if (vendorName) {
           const found = list.find(
             (v) =>
@@ -59,31 +65,17 @@ export function ShippingLabelModal({
             setSelectedVendorId('custom');
             setHeaderTitle(vendorName.toUpperCase());
             setNamaPenerima(vendorName);
-            setWilayah('OTHER');
             setAlamatLengkap('Alamat vendor / penerima tujuan');
             setKontakWa('-');
           }
         } else if (list.length > 0) {
-          // Default to first vendor (e.g. Q-CHOX or first in list)
           const first = list[0];
           setSelectedVendorId(String(first.id));
           applyVendor(first);
         }
       })
       .catch((err) => console.error('Failed to load vendors:', err));
-  }, [isOpen, vendorName]);
-
-  const applyVendor = (v: MasterVendor) => {
-    // Generate clean header name (short or full name)
-    const shortName = v.nama_vendor
-      .replace(/^(PT\.|CV\.|TOKO|SERVICE CENTER)\s+/i, '')
-      .trim();
-    setHeaderTitle(shortName || v.nama_vendor);
-    setNamaPenerima(v.nama_vendor);
-    setWilayah(v.wilayah || 'BDG');
-    setAlamatLengkap(v.alamat_lengkap || '');
-    setKontakWa(v.kontak_wa || '-');
-  };
+  }, [isOpen, vendorName, applyVendor]);
 
   const handleVendorSelect = (vId: string) => {
     setSelectedVendorId(vId);

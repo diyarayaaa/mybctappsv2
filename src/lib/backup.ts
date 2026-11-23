@@ -45,7 +45,6 @@ const DEFAULT_CONFIG: BackupConfig = {
 };
 
 declare global {
-  // eslint-disable-next-line no-var
   var _isRunningAutoBackup: boolean | undefined;
 }
 

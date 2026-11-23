@@ -78,7 +78,6 @@ function MasterDataContent() {
   const [vendors, setVendors] = useState<MasterVendor[]>([]);
   const [keluhanList, setKeluhanList] = useState<MasterKeluhan[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Backup state
   const [backupConfig, setBackupConfig] = useState<BackupConfig>({
@@ -165,7 +164,6 @@ function MasterDataContent() {
   const [isSubmittingKeluhan, setIsSubmittingKeluhan] = useState(false);
 
   const fetchMasterData = useCallback(async () => {
-    setIsLoading(true);
     try {
       const [vRes, kRes, tRes, bRes] = await Promise.all([
         fetch('/api/master/vendors'),
@@ -188,8 +186,6 @@ function MasterDataContent() {
       }
     } catch (err) {
       console.error('Failed to load master data:', err);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 

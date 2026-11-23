@@ -1,0 +1,65 @@
+import {
+  Activity,
+  AlertCircle,
+  BarChart3,
+  Boxes,
+  CalendarCheck,
+  CheckCheck,
+  CheckCircle2,
+  ClipboardList,
+  Clock,
+  Database,
+  DollarSign,
+  FileSpreadsheet,
+  Laptop,
+  LayoutDashboard,
+  LucideIcon,
+  MessageSquare,
+  PackagePlus,
+  PlusCircle,
+  Printer,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
+  Smartphone,
+  Star,
+  Truck,
+  Users,
+  Wrench,
+  Zap
+} from 'lucide-react';
+
+export const ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  BarChart3,
+  PlusCircle,
+  ClipboardList,
+  Truck,
+  ShieldCheck,
+  MessageSquare,
+  Boxes,
+  Users,
+  Database,
+  SlidersHorizontal,
+  FileSpreadsheet,
+  Printer,
+  Settings,
+  PackagePlus,
+  Wrench,
+  CalendarCheck,
+  Clock,
+  AlertCircle,
+  CheckCheck,
+  CheckCircle2,
+  Smartphone,
+  Laptop,
+  Activity,
+  Zap,
+  Star,
+  DollarSign
+};
+
+export function getLucideIcon(name: string, fallback: LucideIcon = Activity): LucideIcon {
+  return ICON_MAP[name] || fallback;
+}
+

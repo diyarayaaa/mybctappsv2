@@ -1236,7 +1236,7 @@ export default function UserManagementPage() {
               <ol className="list-decimal list-inside space-y-1 text-[11px] leading-relaxed text-blue-700 dark:text-blue-300">
                 <li>Buka akun Google Anda di menu <strong>Keamanan</strong> (atau buka <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="underline font-semibold">myaccount.google.com/apppasswords</a>).</li>
                 <li>Pastikan <strong>Verifikasi 2 Langkah</strong> telah aktif di akun Google Anda.</li>
-                <li>Pilih <strong>Sandi Aplikasi</strong>, beri nama misalnya <em>"BCT Service"</em>, lalu buat sandi.</li>
+                <li>Pilih <strong>Sandi Aplikasi</strong>, beri nama misalnya <em>&ldquo;BCT Service&rdquo;</em>, lalu buat sandi.</li>
                 <li>Salin 16 karakter sandi yang muncul (contoh: <code>abcd efgh ijkl mnop</code>) dan tempel di bawah.</li>
               </ol>
             </div>

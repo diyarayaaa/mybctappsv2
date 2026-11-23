@@ -4,12 +4,14 @@ import type { NextRequest } from 'next/server';
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Bypass static files, Next.js internals, and public assets
+  // 1. Bypass static files, Next.js internals, public assets, and public GET branding config
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/tracking') ||
+    (pathname === '/api/settings/app' && request.method === 'GET') ||
     pathname.startsWith('/tracking') ||
+    pathname.startsWith('/uploads') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/logo.png') ||
     pathname.startsWith('/manifest') ||

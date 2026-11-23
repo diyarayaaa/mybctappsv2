@@ -24,8 +24,9 @@ import { Modal } from '@/components/ui/Modal';
 import { CustomerReceiptModal } from '@/components/prints/CustomerReceiptModal';
 import { ShippingLabelModal } from '@/components/prints/ShippingLabelModal';
 import { DynamicTicketForm } from '@/components/forms/DynamicTicketForm';
+import { useAppConfig } from '@/components/config/AppConfigProvider';
 import { Ticket, AuditLog, StatusTiket } from '@/types';
-import { STATUS_LIST, STATUS_LIST_GARANSI, STATUS_LIST_SERVICE, TEKNISI_LIST } from '@/lib/constants';
+import { STATUS_LIST_GARANSI, STATUS_LIST_SERVICE, TEKNISI_LIST } from '@/lib/constants';
 import {
   formatDateIndo,
   formatDateTimeIndo,
@@ -41,6 +42,7 @@ export default function TicketDetailPage({
 }) {
   const router = useRouter();
   const { id } = use(params);
+  const { config, getFieldLabel } = useAppConfig();
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -269,20 +271,42 @@ export default function TicketDetailPage({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
               <div>
                 <p className="text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-wider">
-                  Nama Perangkat / Tipe
+                  {getFieldLabel('nama_barang', 'Nama Perangkat / Tipe')}
                 </p>
                 <p className="font-bold text-slate-900 dark:text-white text-base mt-0.5">{ticket.nama_barang}</p>
               </div>
 
               <div>
                 <p className="text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-wider">
-                  Serial Number (SN)
+                  {getFieldLabel('serial_number', 'Serial Number (SN)')}
                 </p>
                 <p className="font-mono font-bold text-slate-900 dark:text-white text-base mt-0.5">
                   {ticket.serial_number}
                 </p>
               </div>
             </div>
+
+            {/* Dynamic Custom Fields Display */}
+            {config.fields.filter((f) => !f.is_builtin).length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                {config.fields
+                  .filter((f) => !f.is_builtin)
+                  .map((cf) => {
+                    const val = ticket.custom_data?.[cf.field_key];
+                    if (val === undefined || val === null || String(val).trim() === '') return null;
+                    return (
+                      <div key={cf.field_key} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700/70">
+                        <p className="text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+                          {cf.label}
+                        </p>
+                        <p className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm mt-0.5">
+                          {cf.field_type === 'date' ? formatDateIndo(String(val)) : String(val)}
+                        </p>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
 
             <div>
               <p className="text-slate-400 dark:text-slate-500 font-bold uppercase text-[10px] tracking-wider mb-1">

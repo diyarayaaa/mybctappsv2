@@ -1,19 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { formatDateIndo } from '@/lib/whatsapp-formatter';
 import {
   Search,
-  User,
   Phone,
-  Clock,
   History,
   Check,
-  ChevronRight,
-  Sparkles,
-  X,
-  FileText
+  X
 } from 'lucide-react';
 
 export interface CustomerSummary {
@@ -42,18 +37,7 @@ export function CustomerSearchModal({
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load top customers when modal opens or when searchQuery is empty
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const timer = setTimeout(() => {
-      fetchCustomers(searchQuery);
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [isOpen, searchQuery]);
-
-  const fetchCustomers = async (query: string) => {
+  const fetchCustomers = useCallback(async (query: string) => {
     setIsLoading(true);
     try {
       const trimmed = query.trim();
@@ -74,7 +58,18 @@ export function CustomerSearchModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Load top customers when modal opens or when searchQuery is empty
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = setTimeout(() => {
+      fetchCustomers(searchQuery);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, searchQuery, fetchCustomers]);
 
   if (!isOpen) return null;
 

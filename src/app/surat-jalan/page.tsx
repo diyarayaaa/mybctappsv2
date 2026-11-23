@@ -10,10 +10,7 @@ import {
   RefreshCw,
   Trash2,
   AlertCircle,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Filter
+  CheckCircle2
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShippingLabelModal } from '@/components/prints/ShippingLabelModal';
@@ -300,7 +297,7 @@ export default function SuratJalanPage() {
               ) : suratJalanList.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-slate-400">
-                    Belum ada data Surat Jalan. Klik tombol "Buat Surat Jalan" di atas.
+                    Belum ada data Surat Jalan. Klik tombol &ldquo;Buat Surat Jalan&rdquo; di atas.
                   </td>
                 </tr>
               ) : (

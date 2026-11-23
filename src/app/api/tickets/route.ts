@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logActivity } from '@/lib/audit';
+import { ensureWhiteLabelTablesAndSeed, parseCustomData } from '@/lib/app-config';
 import { getNextServiceNumber } from './next-number/route';
 import { Ticket } from '@/types';
 import crypto from 'crypto';
@@ -9,6 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    ensureWhiteLabelTablesAndSeed(db);
     const { searchParams } = new URL(request.url);
     const tab = searchParams.get('tab') || 'all';
     const status = searchParams.get('status');
@@ -63,10 +65,11 @@ export async function GET(request: NextRequest) {
         serial_number LIKE ? OR 
         keluhan LIKE ? OR 
         distributor_vendor LIKE ? OR
-        no_surat_jalan LIKE ?
+        no_surat_jalan LIKE ? OR
+        custom_data LIKE ?
       )`;
       const searchPattern = `%${search}%`;
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 8; i++) {
         params.push(searchPattern);
       }
     }
@@ -87,7 +90,8 @@ export async function GET(request: NextRequest) {
 
     const tickets: Ticket[] = rawTickets.map((t) => ({
       ...(t as unknown as Ticket),
-      kelengkapan: typeof t.kelengkapan === 'string' ? JSON.parse(t.kelengkapan || '[]') : (t.kelengkapan || [])
+      kelengkapan: typeof t.kelengkapan === 'string' ? JSON.parse(t.kelengkapan || '[]') : (t.kelengkapan || []),
+      custom_data: parseCustomData(t.custom_data)
     }));
 
     return NextResponse.json({ tickets, total: tickets.length });
@@ -99,6 +103,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    ensureWhiteLabelTablesAndSeed(db);
     const body = await request.json();
 
     const id = body.id || `ticket-${crypto.randomUUID()}`;
@@ -160,6 +165,7 @@ export async function POST(request: NextRequest) {
     const hasil_service_garansi = body.hasil_service_garansi || null;
     const sn_baru = body.sn_baru?.trim() || null;
     const tgl_diambil_customer = body.tgl_diambil_customer || null;
+    const custom_data = JSON.stringify(parseCustomData(body.custom_data));
 
     const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
 
@@ -169,13 +175,13 @@ export async function POST(request: NextRequest) {
         jenis_barang, nama_barang, serial_number, keluhan, kelengkapan, estimasi_selesai,
         teknisi, status, catatan, estimasi_biaya, dp, sisa, biaya_akhir,
         no_surat_jalan, distributor_vendor, tgl_kirim_vendor, tgl_datang_vendor,
-        hasil_service_garansi, sn_baru, tgl_diambil_customer, created_at, updated_at
+        hasil_service_garansi, sn_baru, tgl_diambil_customer, custom_data, created_at, updated_at
       ) VALUES (
         ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?,
-        ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?
       )
     `);
 
@@ -206,6 +212,7 @@ export async function POST(request: NextRequest) {
       hasil_service_garansi,
       sn_baru,
       tgl_diambil_customer,
+      custom_data,
       now,
       now
     );

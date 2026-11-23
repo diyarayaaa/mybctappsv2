@@ -4,6 +4,7 @@ import { Roboto } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { AppConfigProvider } from '@/components/config/AppConfigProvider';
 import { AppLayout } from '@/components/layout/AppLayout';
 
 const roboto = Roboto({
@@ -15,7 +16,7 @@ const roboto = Roboto({
 
 export const metadata: Metadata = {
   title: 'Best Computel Service & RMA Management',
-  description: 'Aplikasi Web Fullstack Manajemen Servis, Garansi, Surat Jalan & WhatsApp Automation Best Computel',
+  description: 'Aplikasi Web Fullstack Manajemen Servis, Garansi, Surat Jalan & WhatsApp Automation (White-Label Ready)',
   icons: {
     icon: '/logo.png',
     shortcut: '/logo.png',
@@ -40,14 +41,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className={`h-full ${roboto.variable}`} suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,300;1,400;1,500;1,700;1,900&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body className={`h-full ${roboto.className} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex transition-colors duration-200`}>
         <Script id="theme-init" strategy="beforeInteractive">
           {`
@@ -71,7 +64,9 @@ export default function RootLayout({
         </Script>
         <ThemeProvider>
           <AuthProvider>
-            <AppLayout>{children}</AppLayout>
+            <AppConfigProvider>
+              <AppLayout>{children}</AppLayout>
+            </AppConfigProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -10,8 +10,7 @@ import {
   Loader2,
   ArrowRight,
   FileText,
-  X,
-  Trash2
+  X
 } from 'lucide-react';
 
 interface ImportSpreadsheetModalProps {
@@ -108,9 +107,9 @@ export function ImportSpreadsheetModal({
       });
 
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setResult({
-        error: err.message || 'Terjadi kesalahan saat mengimpor data'
+        error: (err as Error).message || 'Terjadi kesalahan saat mengimpor data'
       });
     } finally {
       setIsUploading(false);

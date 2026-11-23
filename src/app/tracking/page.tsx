@@ -784,7 +784,7 @@ Mohon info perkembangannya, terima kasih.`;
                         Keluhan Saat Diterima
                       </span>
                       <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-medium">
-                        "{ticket.keluhan}"
+                        &ldquo;{ticket.keluhan}&rdquo;
                       </div>
                     </div>
                   </div>

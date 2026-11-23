@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { Ticket, AuditLog } from '@/types';
+import { Ticket } from '@/types';
 
 export const dynamic = 'force-dynamic';
 

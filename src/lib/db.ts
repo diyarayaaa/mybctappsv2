@@ -36,9 +36,7 @@ function getDbPath(): string {
 const dbPath = getDbPath();
 
 declare global {
-  // eslint-disable-next-line no-var
   var _sqliteDb: DatabaseSync | undefined;
-  // eslint-disable-next-line no-var
   var _sqliteDbInitialized: boolean | undefined;
 }
 

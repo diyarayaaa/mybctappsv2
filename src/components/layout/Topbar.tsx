@@ -14,53 +14,30 @@ import {
   Moon,
   Laptop,
   Clock,
-  X
+  X,
+  SlidersHorizontal
 } from 'lucide-react';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useAppConfig } from '@/components/config/AppConfigProvider';
 
 interface PageMeta {
   title: string;
   subtitle: string;
 }
 
-const PAGE_META_MAP: Record<string, PageMeta> = {
-  '/': {
-    title: 'Dashboard',
-    subtitle: 'Monitoring antrean servis, performa teknisi & status unit'
-  },
-  '/tickets': {
-    title: 'Daftar Service',
-    subtitle: 'Kelola dan lacak semua antrean tiket servis & klaim garansi'
-  },
-  '/tickets/new': {
-    title: 'Form Input Service',
-    subtitle: 'Register a new service ticket for a customer device'
-  },
-  '/surat-jalan': {
-    title: 'Pengiriman Vendor',
-    subtitle: 'Kelola pengiriman unit garansi RMA dan cetak surat jalan'
-  },
-  '/whatsapp': {
-    title: 'Laporan WhatsApp',
-    subtitle: 'Broadcast dan notifikasi otomatis ke customer & sales'
-  },
-  '/master': {
-    title: 'Data Master & Pengaturan',
-    subtitle: 'Kelola database vendor, customer, dan preset opsi servis'
-  },
-  '/alamat': {
-    title: 'Cetak Alamat Vendor',
-    subtitle: 'Label stiker pengiriman barang garansi & servis ke distributor/vendor'
-  },
-  '/logs': {
-    title: 'Audit Log Trail',
-    subtitle: 'Riwayat lengkap aktivitas dan perubahan status sistem'
-  },
-  '/users': {
-    title: 'Manajemen Pengguna',
-    subtitle: 'Kelola akun teknisi, hak akses role admin & persetujuan login'
-  }
+const PAGE_SUBTITLE_MAP: Record<string, string> = {
+  '/': 'Monitoring antrean servis, performa teknisi & status unit',
+  '/statistik': 'Ringkasan performa bisnis, tren masuk & produktivitas teknisi',
+  '/tickets': 'Kelola dan lacak semua antrean tiket servis & klaim garansi',
+  '/tickets/new': 'Register a new service ticket for a customer device',
+  '/surat-jalan': 'Kelola pengiriman unit garansi RMA dan cetak surat jalan',
+  '/whatsapp': 'Broadcast dan notifikasi otomatis ke customer & sales',
+  '/master': 'Kelola database vendor, customer, dan preset opsi servis',
+  '/alamat': 'Label stiker pengiriman barang garansi & servis ke distributor/vendor',
+  '/logs': 'Riwayat lengkap aktivitas dan perubahan status sistem',
+  '/users': 'Kelola akun teknisi, hak akses role admin & persetujuan login',
+  '/settings/white-label': 'Kustomisasi branding, fitur sidebar, KPI dashboard & form builder'
 };
 
 function TopbarContent() {
@@ -70,6 +47,7 @@ function TopbarContent() {
   const currentTab = searchParams ? searchParams.get('tab') : null;
   const { toggleMobileSidebar, theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { config, getFeatureLabel } = useAppConfig();
 
   const urlSearch = searchParams ? searchParams.get('search') || '' : '';
   const [searchQuery, setSearchQuery] = useState(urlSearch);
@@ -77,12 +55,10 @@ function TopbarContent() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; title: string; time: string; type: string }[]>([]);
 
-  // Synchronize Topbar search input when URL search query changes
   useEffect(() => {
     setSearchQuery(urlSearch);
   }, [urlSearch]);
 
-  // Live debounced search when user is already on /tickets page
   useEffect(() => {
     if (pathname !== '/tickets') return;
     if (searchQuery.trim() === urlSearch) return;
@@ -102,7 +78,6 @@ function TopbarContent() {
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
@@ -128,7 +103,6 @@ function TopbarContent() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch quick notification alerts & trigger daily auto-backup heartbeat every 5 minutes
   useEffect(() => {
     const loadNotifs = async () => {
       try {
@@ -171,39 +145,92 @@ function TopbarContent() {
     return () => clearInterval(interval);
   }, []);
 
-  // If on login page, don't show topbar
   if (pathname === '/login') return null;
 
-  // Determine current page title and subtitle
   let currentMeta: PageMeta = {
-    title: 'BCT Service',
-    subtitle: 'Service & Warranty Management System'
+    title: config.branding.appName || 'Service Center',
+    subtitle: config.branding.appSubtitle || 'Service & Warranty Management System'
   };
 
-  if (pathname === '/whatsapp') {
+  if (pathname === '/') {
+    currentMeta = {
+      title: getFeatureLabel('dashboard', 'Dashboard'),
+      subtitle: PAGE_SUBTITLE_MAP['/']
+    };
+  } else if (pathname === '/statistik') {
+    currentMeta = {
+      title: getFeatureLabel('statistik', 'Dashboard Statistik'),
+      subtitle: PAGE_SUBTITLE_MAP['/statistik']
+    };
+  } else if (pathname === '/tickets') {
+    currentMeta = {
+      title: getFeatureLabel('tickets', 'Daftar Service'),
+      subtitle: PAGE_SUBTITLE_MAP['/tickets']
+    };
+  } else if (pathname === '/tickets/new') {
+    currentMeta = {
+      title: getFeatureLabel('tickets_new', 'Form Input Service'),
+      subtitle: PAGE_SUBTITLE_MAP['/tickets/new']
+    };
+  } else if (pathname === '/surat-jalan') {
+    currentMeta = {
+      title: getFeatureLabel('surat_jalan', 'Pengiriman Vendor'),
+      subtitle: PAGE_SUBTITLE_MAP['/surat-jalan']
+    };
+  } else if (pathname === '/alamat') {
+    currentMeta = {
+      title: getFeatureLabel('cetak_alamat', 'Cetak Alamat Vendor'),
+      subtitle: PAGE_SUBTITLE_MAP['/alamat']
+    };
+  } else if (pathname === '/users') {
+    currentMeta = {
+      title: getFeatureLabel('users', 'Manajemen User'),
+      subtitle: PAGE_SUBTITLE_MAP['/users']
+    };
+  } else if (pathname.startsWith('/settings/white-label')) {
+    currentMeta = {
+      title: 'Custom Aplikasi',
+      subtitle: PAGE_SUBTITLE_MAP['/settings/white-label']
+    };
+  } else if (pathname === '/whatsapp') {
     if (currentTab === 'sales') {
       currentMeta = {
-        title: 'Laporan WA Garansi Stock',
+        title: getFeatureLabel('wa_sales', 'Laporan WA Garansi Stock'),
         subtitle: 'Broadcast notifikasi stok unit ready & garansi ke sales toko'
       };
     } else if (currentTab === 'quick') {
       currentMeta = {
-        title: 'Laporan WA Customer',
+        title: getFeatureLabel('wa_customer', 'Laporan WA Customer'),
         subtitle: 'Kirim tanda terima & notifikasi servis selesai langsung ke pelanggan'
       };
     } else {
       currentMeta = {
-        title: 'Laporan WA Mingguan',
+        title: getFeatureLabel('wa_mingguan', 'Laporan WA Mingguan'),
         subtitle: 'Laporan rekapitulasi servis & status pengerjaan mingguan teknisi'
       };
     }
-  } else if (pathname === '/master' && currentTab === 'backup') {
-    currentMeta = {
-      title: 'Backup Database & Spreadsheet',
-      subtitle: 'Sinkronisasi & pencadangan otomatis harian database ke Google Spreadsheet'
-    };
-  } else if (PAGE_META_MAP[pathname]) {
-    currentMeta = PAGE_META_MAP[pathname];
+  } else if (pathname === '/master') {
+    if (currentTab === 'backup') {
+      currentMeta = {
+        title: getFeatureLabel('backup_spreadsheet', 'Backup Spreadsheet'),
+        subtitle: 'Sinkronisasi & pencadangan otomatis harian database ke Google Spreadsheet'
+      };
+    } else if (currentTab === 'customer') {
+      currentMeta = {
+        title: getFeatureLabel('master_customer', 'Master Customer'),
+        subtitle: PAGE_SUBTITLE_MAP['/master']
+      };
+    } else if (currentTab === 'keluhan') {
+      currentMeta = {
+        title: getFeatureLabel('master_keluhan', 'Preset Form Option'),
+        subtitle: PAGE_SUBTITLE_MAP['/master']
+      };
+    } else {
+      currentMeta = {
+        title: getFeatureLabel('master_vendor', 'Data Master Vendor'),
+        subtitle: PAGE_SUBTITLE_MAP['/master']
+      };
+    }
   } else if (pathname.startsWith('/tickets/')) {
     currentMeta = {
       title: 'Detail Tiket Servis',
@@ -240,9 +267,7 @@ function TopbarContent() {
     <header className="topbar-container bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 sticky top-0 z-30 px-3.5 sm:px-6 py-2.5 md:py-0 md:h-20 shrink-0 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5 md:gap-4 transition-colors duration-200">
       {/* Top Row: Hamburger (Mobile) + Page Title & Subtitle + Mobile Right Actions */}
       <div className="flex items-center justify-between gap-3 w-full md:w-auto min-w-0">
-        {/* Left: Hamburger (Mobile) + Page Title & Subtitle */}
         <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
-          {/* Mobile Sidebar Hamburger Toggle */}
           <button
             type="button"
             onClick={toggleMobileSidebar}
@@ -252,7 +277,6 @@ function TopbarContent() {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Dynamic Page Header & Subtitle */}
           <div className="min-w-0">
             <h1 className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight truncate">
               {currentMeta.title}
@@ -263,9 +287,8 @@ function TopbarContent() {
           </div>
         </div>
 
-        {/* Mobile Right Actions (Notifications & User Profile) - visible on <md in top row */}
+        {/* Mobile Right Actions */}
         <div className="flex md:hidden items-center gap-2 shrink-0">
-          {/* Notification Bell (Mobile) */}
           <button
             type="button"
             data-notif-trigger="true"
@@ -281,7 +304,6 @@ function TopbarContent() {
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
           </button>
 
-          {/* User Profile Button (Mobile) */}
           <button
             type="button"
             data-user-trigger="true"
@@ -291,7 +313,7 @@ function TopbarContent() {
             }}
             className="flex items-center p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all"
           >
-            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 tracking-tight">
+            <div className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 tracking-tight">
               {userInitials}
             </div>
           </button>
@@ -325,7 +347,6 @@ function TopbarContent() {
 
       {/* Right: Desktop Search Bar, Notifications & User Profile */}
       <div className="hidden md:flex items-center gap-2.5 sm:gap-4 shrink-0">
-        {/* Desktop Search Bar */}
         <form onSubmit={handleSearchSubmit} className="w-64 lg:w-80">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -349,7 +370,6 @@ function TopbarContent() {
           </div>
         </form>
 
-        {/* Notification Bell (Desktop) */}
         <div className="relative">
           <button
             type="button"
@@ -363,12 +383,10 @@ function TopbarContent() {
             title="Notifikasi Sistem"
           >
             <Bell className="w-5 h-5" />
-            {/* Red Badge Dot */}
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
           </button>
         </div>
 
-        {/* User Profile Pill (Desktop) */}
         <div className="relative">
           <button
             type="button"
@@ -379,12 +397,10 @@ function TopbarContent() {
             }}
             className="flex items-center gap-2.5 p-1 sm:pl-1.5 sm:pr-2.5 sm:py-1 rounded-full sm:rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all text-left"
           >
-            {/* Initials Circle */}
-            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 tracking-tight">
+            <div className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 tracking-tight">
               {userInitials}
             </div>
 
-            {/* Name + Chevron */}
             <div className="hidden sm:flex items-center gap-1.5 min-w-0">
               <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[100px]">
                 {currentUserName}
@@ -399,7 +415,7 @@ function TopbarContent() {
         </div>
       </div>
 
-      {/* Shared Notifications Dropdown (Works on both Mobile & Desktop) */}
+      {/* Shared Notifications Dropdown */}
       {isNotificationsOpen && (
         <div
           ref={notifDropdownRef}
@@ -423,7 +439,7 @@ function TopbarContent() {
                   key={n.id}
                   className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-start gap-2.5 text-left text-xs"
                 >
-                  <div className="p-1 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
+                  <div className="p-1 rounded-lg bg-brand-soft text-brand shrink-0 mt-0.5">
                     <Clock className="w-3.5 h-3.5" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -439,7 +455,7 @@ function TopbarContent() {
             <Link
               href="/tickets"
               onClick={() => setIsNotificationsOpen(false)}
-              className="block text-center text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline py-1"
+              className="block text-center text-[11px] font-bold text-brand hover:underline py-1"
             >
               Lihat Semua Tiket Servis →
             </Link>
@@ -447,21 +463,19 @@ function TopbarContent() {
         </div>
       )}
 
-      {/* Shared User Profile Dropdown Menu (Works on both Mobile & Desktop) */}
+      {/* Shared User Profile Dropdown Menu */}
       {isUserDropdownOpen && (
         <div
           ref={userDropdownRef}
           className="absolute right-3.5 sm:right-6 top-14 md:top-16 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150 space-y-2"
         >
-          {/* Account Info */}
           <div className="px-3 py-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-700/60">
             <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{currentUserName}</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 capitalize">
-              {user?.role || 'Administrator'} • BCT Service
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 capitalize truncate">
+              {user?.role || 'Administrator'} • {config.branding.appName}
             </p>
           </div>
 
-          {/* Quick Theme Switcher */}
           <div className="px-2 pt-1">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Tema Tampilan</div>
             <div className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-700/40 p-1 rounded-xl">
@@ -470,7 +484,7 @@ function TopbarContent() {
                 onClick={() => setTheme('light')}
                 className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[11px] font-medium transition-colors ${
                   theme === 'light'
-                    ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-2xs'
+                    ? 'bg-white dark:bg-slate-800 text-brand shadow-2xs'
                     : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
@@ -482,7 +496,7 @@ function TopbarContent() {
                 onClick={() => setTheme('dark')}
                 className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[11px] font-medium transition-colors ${
                   theme === 'dark'
-                    ? 'bg-white dark:bg-slate-800 text-blue-400 shadow-2xs'
+                    ? 'bg-white dark:bg-slate-800 text-brand shadow-2xs'
                     : 'text-slate-500 hover:text-white'
                 }`}
               >
@@ -494,7 +508,7 @@ function TopbarContent() {
                 onClick={() => setTheme('system')}
                 className={`flex items-center justify-center gap-1 py-1 rounded-lg text-[11px] font-medium transition-colors ${
                   theme === 'system'
-                    ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-2xs'
+                    ? 'bg-white dark:bg-slate-800 text-brand shadow-2xs'
                     : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
@@ -504,13 +518,20 @@ function TopbarContent() {
             </div>
           </div>
 
-          {/* Admin Link to Manajemen User */}
           {user?.role === 'ADMIN' && (
-            <div className="px-2 pb-1.5 border-b border-slate-100 dark:border-slate-700/60">
+            <div className="px-2 pb-1.5 border-b border-slate-100 dark:border-slate-700/60 space-y-1.5">
+              <Link
+                href="/settings/white-label"
+                onClick={() => setIsUserDropdownOpen(false)}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-brand bg-brand-soft hover:opacity-90 transition-opacity"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Custom Aplikasi</span>
+              </Link>
               <Link
                 href="/users"
                 onClick={() => setIsUserDropdownOpen(false)}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Manajemen User (Admin)</span>
@@ -518,7 +539,6 @@ function TopbarContent() {
             </div>
           )}
 
-          {/* Logout Button */}
           <div className="p-1.5 border-t border-slate-100 dark:border-slate-700/60">
             <button
               type="button"
