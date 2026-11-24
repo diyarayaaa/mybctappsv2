@@ -21,7 +21,7 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  Sparkles,
+  SlidersHorizontal,
   GripVertical,
   X,
   ListChecks
@@ -317,7 +317,7 @@ function WhiteLabelSettingsContent() {
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="p-2.5 rounded-xl bg-brand-soft text-brand shrink-0">
-            <Sparkles className="w-5 h-5" />
+            <SlidersHorizontal className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">

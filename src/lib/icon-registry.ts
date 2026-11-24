@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Smartphone,
+  Sparkles,
   Star,
   Truck,
   Users,
@@ -56,6 +57,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   Activity,
   Zap,
   Star,
+  Sparkles,
   DollarSign
 };
 
